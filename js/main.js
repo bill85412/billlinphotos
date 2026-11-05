@@ -208,12 +208,27 @@
     };
     prod.querySelector(".minus").onclick = () => (qty.value = Math.max(1, +qty.value - 1));
     prod.querySelector(".plus").onclick = () => (qty.value = +qty.value + 1);
-    prod.querySelector(".add").onclick = () => {
+    // Ask the site's checkout function for a Stripe checkout page, then go there.
+    const add = prod.querySelector(".add");
+    add.onclick = async () => {
       if (!sel.value) { note.textContent = "Please select Material."; return; }
-      const slug = prod.dataset.slug;
-      const link = ((cfg.stripeLinks || {})[slug] || {})[sel.value];
-      if (link) { location.href = link; return; }
-      note.textContent = "Online ordering is coming soon.";
+      const label = add.textContent;
+      add.disabled = true; add.textContent = "Loading…"; note.textContent = "";
+      try {
+        const r = await fetch("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slug: prod.dataset.slug, variant: sel.value, quantity: +qty.value || 1 }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (r.ok && data.url) { location.href = data.url; return; }
+        note.textContent = r.status === 404 || r.status === 503 || r.status === 405
+          ? "Online ordering is coming soon."
+          : data.error || "Checkout is unavailable right now. Please try again in a moment.";
+      } catch (e) {
+        note.textContent = "Online ordering is coming soon.";
+      }
+      add.disabled = false; add.textContent = label;
     };
   }
 })();

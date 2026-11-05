@@ -244,6 +244,9 @@ figure.zoom:hover img { opacity: .9; }
 .qty input { width: 30px; text-align: center; border: 0; background: none; font: inherit; }
 .form-note { font-size: 12px; margin-top: 10px; min-height: 18px; }
 
+.order-done { min-height: 70vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; text-align: center; padding: 140px var(--gutter) 100px; }
+.order-done p { font-family: var(--serif); font-size: 19px; line-height: 1.6; max-width: 46ch; }
+
 /* ---------- Footer ---------- */
 .site-footer { background: var(--gray); text-align: center; padding: 22px var(--gutter); }
 
