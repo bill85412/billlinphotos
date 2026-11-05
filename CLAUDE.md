@@ -4,7 +4,7 @@ Bill Lin's street-photography site. Plain static HTML/CSS/JS, no build step. Hos
 
 ## Structure
 - One `.html` file per page. Every page has the same `<head>` and `<main>` wrapper; header, mobile menu and footer are injected by `js/main.js` (the copyright footer is placed inside the bottom of the last section of `<main>`, over its photo or colour, with no band of its own; the year is automatic) — edit nav links, Instagram/YouTube URLs and the footer there, not in each page.
-- `css/style.css` — all styles; colors/fonts are tokens at the top (`--gray`, `--sage`, `--serif` = Cormorant Garamond, `--sans`).
+- `css/style.css` — all styles; colors/fonts are tokens at the top (`--gray`, `--sage`, `--serif` = Cormorant Garamond, `--sans`). The owner wants one font: everything is Cormorant Garamond (body default, buttons inherit) except the top navigation links (`.site-nav a`) and the Gallery map's "Explore by city" label (`.map-eyebrow`), which use `--sans`. Small UI text is sized up a little because Cormorant reads small.
 - `js/config.js` — shop settings (Shopify store address and public token, shipping note, multi-print discount); see Shop below.
 - `images/` — all photos, flat folder, named by camera file number (e.g. `DSC05015.jpg`).
 - `favicon.svg` + `apple-touch-icon.png` (BL monogram), `sitemap.xml`, `robots.txt`, `_headers` (Cloudflare cache headers: images 30 days; CSS/JS revalidate on every visit so edits show up at once).
