@@ -248,12 +248,8 @@ figure.zoom:hover img { opacity: .9; }
   .shop-collage .collage { grid-column: 1; grid-row: 1; }
   .shop-collage .cta { grid-column: 1; grid-row: 2; }
   .season-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
-  .world-map .callout { display: none; }
-  .city-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 34px; }
-  .city-list a, .city-list span { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 54px; padding: 6px; font-family: var(--serif); font-size: 16px; text-align: center; }
-  .city-list a { background: var(--sage); color: #000; }
-  .city-list span { background: #111; color: #d8d8d2; }
-  .city-list small { font-family: var(--sans); font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: #9a9b94; }
+  .world-map .label { font-size: 22px; }
+  .world-map .tip { font-size: 12px; }
   .portrait-row { grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .grid-3 { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .product-grid { grid-template-columns: repeat(2, 1fr); }
@@ -263,3 +259,13 @@ figure.zoom:hover img { opacity: .9; }
   .grid-3, .product-grid { grid-template-columns: 1fr; }
   .portrait-row { grid-template-columns: 1fr; }
   }
+
+/* Touch screens have no hover: hide the callouts and show tappable city buttons under the map instead */
+@media (hover: none) {
+  .world-map .callout { display: none; }
+  .city-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 34px; }
+  .city-list a, .city-list span { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 54px; padding: 6px; font-family: var(--serif); font-size: 16px; text-align: center; }
+  .city-list a { background: var(--sage); color: #000; }
+  .city-list span { background: #111; color: #d8d8d2; }
+  .city-list small { font-family: var(--sans); font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: #9a9b94; }
+}

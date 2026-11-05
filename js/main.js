@@ -130,12 +130,49 @@
     });
   }
 
-  /* ---------- World map: size each callout box to its text ---------- */
-  document.querySelectorAll(".world-map .callout").forEach((g) => {
-    let w = 0;
-    g.querySelectorAll("text").forEach((t) => { try { w = Math.max(w, t.getBBox().width); } catch (e) {} });
-    if (w) g.querySelector(".label-box").setAttribute("width", (w + 18).toFixed(1));
-  });
+  /* ---------- World map: lay out each callout label at the end of its leader line ---------- */
+  // The label font grows on narrower windows (CSS), so positions and box size are measured here.
+  function layoutCallouts() {
+    document.querySelectorAll(".world-map .callout").forEach((g) => {
+      const m = g.querySelector(".leader").getAttribute("d").match(/L([\d.]+) ([\d.]+)H([\d.]+)/);
+      if (!m) return;
+      const ey = +m[2], hx = +m[3];
+      const label = g.querySelector(".label"), tip = g.querySelector(".tip"), box = g.querySelector(".label-box");
+      const fs = parseFloat(getComputedStyle(label).fontSize) || 15;
+      const pad = fs * 0.55;
+      label.setAttribute("x", hx + pad);
+      if (tip) {
+        const ts = parseFloat(getComputedStyle(tip).fontSize) || 9;
+        const h = fs + 3 + ts;
+        const top = ey - h / 2;
+        label.setAttribute("y", top + fs * 0.8);
+        tip.setAttribute("x", hx + pad);
+        tip.setAttribute("y", top + fs + 3 + ts * 0.85);
+      } else {
+        label.setAttribute("y", ey + fs * 0.33);
+      }
+      try {
+        let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+        g.querySelectorAll("text").forEach((t) => {
+          const b = t.getBBox();
+          x1 = Math.min(x1, b.x); y1 = Math.min(y1, b.y); x2 = Math.max(x2, b.x + b.width); y2 = Math.max(y2, b.y + b.height);
+        });
+        if (x2 > x1) {
+          const vpad = fs * 0.32;
+          box.setAttribute("x", hx);
+          box.setAttribute("y", Math.min(y1 - vpad, ey - (y2 - y1) / 2 - vpad));
+          box.setAttribute("width", x2 - hx + pad);
+          box.setAttribute("height", y2 - y1 + vpad * 2);
+        }
+      } catch (e) {}
+    });
+  }
+  if (document.querySelector(".world-map")) {
+    layoutCallouts();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(layoutCallouts);
+    let rt;
+    window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(layoutCallouts, 150); });
+  }
 
   /* ---------- Shop category filter ---------- */
   const cats = document.querySelector(".shop-cats");
