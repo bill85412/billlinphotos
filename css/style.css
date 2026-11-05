@@ -92,19 +92,21 @@ h4 { font-size: clamp(17px, 1.7vw, 19px); line-height: 1.29; }
 .about-intro .text h4 + h4 { margin-top: 22px; }
 .about-intro .text .btn { display: block; width: max-content; margin: 18px 0 0 38%; padding-left: 64px; padding-right: 64px; }
 
-/* Shop collage: text on the left, portrait in the middle spanning both rows, two landscapes stacked on the right */
+/* Shop collage: text on the left; three overlapping photos on the right, measured from the original site.
+   Stacking order, bottom to top: Tokyo street (c3), market grill (c2), flowers (c1). */
 .shop-collage { min-height: 663px; display: flex; align-items: center; }
 .shop-collage .stage {
-  display: grid; grid-template-columns: 38fr 31fr 31fr; grid-template-rows: auto auto;
-  gap: 12px; align-items: stretch; padding-block: 90px; max-width: 1280px;
+  display: grid; grid-template-columns: 8% 34% 3.9% 50.95% 1fr; align-items: center;
+  max-width: 1400px; padding: 90px 0;
 }
-.shop-collage .cta { grid-column: 1; grid-row: 1 / span 2; align-self: center; text-align: center; padding-right: 3vw; }
+.shop-collage .cta { grid-column: 2; text-align: center; }
 .shop-collage .cta .btn { padding-left: 40px; padding-right: 40px; }
 .shop-collage .cta h4 { margin-top: 36px; }
-.shop-collage .stage > img { width: 100%; object-fit: cover; display: block; }
-/* the portrait takes its height from the two landscape photos beside it */
-.shop-collage .c1 { grid-column: 2; grid-row: 1 / span 2; height: 0; min-height: 100%; }
-.shop-collage .c2, .shop-collage .c3 { grid-column: 3; aspect-ratio: 4 / 3; height: auto; }
+.shop-collage .collage { grid-column: 4; position: relative; aspect-ratio: 1019 / 860; }
+.shop-collage .collage img { position: absolute; display: block; height: auto; object-fit: cover; }
+.shop-collage .c1 { left: 0;     top: 11.3%; width: 47.1%; aspect-ratio: 2 / 3; z-index: 3; }
+.shop-collage .c2 { left: 32.4%; top: 0;     width: 59.9%; aspect-ratio: 3 / 2; z-index: 2; }
+.shop-collage .c3 { left: 24.4%; top: 40.3%; width: 75.6%; aspect-ratio: 3 / 2; z-index: 1; }
 
 /* ---------- About ---------- */
 .about-hero { min-height: 570px; height: 75vh; display: flex; align-items: center; justify-content: center; text-align: center; --overlay: 0; }
@@ -216,10 +218,9 @@ figure.zoom:hover img { opacity: .9; }
   .about-intro .inner { grid-template-columns: 1fr; gap: 34px; padding: 90px var(--gutter); }
   .about-intro .text { grid-column: 1; padding-top: 0; }
   .about-intro .text .btn { margin-left: 0; }
-  .shop-collage .stage { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto auto; }
-  .shop-collage .c1 { grid-column: 1; grid-row: 1 / span 2; }
-  .shop-collage .c2, .shop-collage .c3 { grid-column: 2; }
-  .shop-collage .cta { grid-column: 1 / -1; grid-row: 3; padding-right: 0; margin-top: 30px; }
+  .shop-collage .stage { grid-template-columns: 1fr; gap: 44px; padding: 90px var(--gutter); }
+  .shop-collage .collage { grid-column: 1; grid-row: 1; }
+  .shop-collage .cta { grid-column: 1; grid-row: 2; }
   .city-grid, .season-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
   .portrait-row { grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .grid-3 { grid-template-columns: repeat(2, 1fr); gap: 10px; }
