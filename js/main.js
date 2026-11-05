@@ -220,6 +220,66 @@
     apply((location.hash || "#all").slice(1));
   }
 
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  /* ---------- Checkout: send the cart to the server, which returns the PayPal payment page ---------- */
+  async function startCheckout(btn, note) {
+    const label = btn.textContent;
+    btn.disabled = true; btn.classList.add("loading"); note.textContent = "";
+    try {
+      const r = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: Cart.read().map(({ slug, variant, quantity }) => ({ slug, variant, quantity })) }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok && data.url) { location.href = data.url; return; }
+      // No checkout function here yet (preview, or keys not set up): say so plainly.
+      note.textContent = r.status === 503 || !data.error ? "Online ordering is coming soon." : data.error;
+    } catch (err) {
+      note.textContent = "Online ordering is coming soon.";
+    }
+    btn.disabled = false; btn.classList.remove("loading"); btn.textContent = label;
+  }
+
+  /* ---------- Mini cart: the "Added to cart!" panel that drops in under the header ---------- */
+  let miniCart, miniTimer;
+  function showMiniCart(item) {
+    if (!miniCart) {
+      miniCart = document.createElement("div");
+      miniCart.className = "mini-cart";
+      miniCart.hidden = true;
+      miniCart.innerHTML = `
+        <div class="mini-cart-backdrop"></div>
+        <div class="mini-cart-dialog" role="dialog" aria-label="Added to cart">
+          <div class="mini-cart-head"><span>Added to cart!</span><button class="mini-cart-close" type="button" aria-label="Close">×</button></div>
+          <div class="mini-cart-line"></div>
+          <div class="mini-cart-actions"><a class="mini-cart-view" href="cart.html"></a><button class="mini-cart-checkout" type="button">Checkout</button></div>
+          <p class="mini-cart-note" role="status"></p>
+        </div>`;
+      document.body.append(miniCart);
+      const close = () => { miniCart.classList.remove("open"); clearTimeout(miniTimer); setTimeout(() => { if (!miniCart.classList.contains("open")) miniCart.hidden = true; }, 250); };
+      miniCart.querySelector(".mini-cart-backdrop").onclick = close;
+      miniCart.querySelector(".mini-cart-close").onclick = close;
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape" && miniCart.classList.contains("open")) close(); });
+      const dialog = miniCart.querySelector(".mini-cart-dialog");
+      dialog.addEventListener("mouseenter", () => clearTimeout(miniTimer));
+      dialog.addEventListener("mouseleave", () => { miniTimer = setTimeout(close, 3000); });
+      miniCart.querySelector(".mini-cart-checkout").onclick = (e) => { clearTimeout(miniTimer); startCheckout(e.currentTarget, miniCart.querySelector(".mini-cart-note")); };
+      miniCart._close = close;
+    }
+    miniCart.querySelector(".mini-cart-line").innerHTML = `
+      ${item.image ? `<img src="${esc(item.image)}" alt="">` : "<span></span>"}
+      <div><p class="mini-cart-title">${esc(item.title)}</p><p class="mini-cart-variant">${esc(item.variant)} · ${item.added}x</p></div>
+      <p class="mini-cart-price">${money(item.price * item.added)}</p>`;
+    miniCart.querySelector(".mini-cart-view").textContent = `View Cart (${Cart.count()})`;
+    miniCart.querySelector(".mini-cart-note").textContent = "";
+    miniCart.hidden = false;
+    requestAnimationFrame(() => miniCart.classList.add("open"));
+    clearTimeout(miniTimer);
+    miniTimer = setTimeout(miniCart._close, 5000);
+  }
+
   /* ---------- Product page ---------- */
   const prod = document.querySelector(".product-info");
   if (prod) {
@@ -227,45 +287,50 @@
     const price = prod.querySelector(".price");
     const qty = prod.querySelector(".qty input");
     const note = prod.querySelector(".form-note");
+    const optionName = (prod.querySelector("label[for]")?.textContent || "Option:").replace(/:\s*$/, "");
     const min = Math.min(...[...sel.options].filter((o) => o.value).map((o) => +o.dataset.price));
     sel.onchange = () => {
       const o = sel.selectedOptions[0];
-      price.textContent = o.value ? `$${(+o.dataset.price).toFixed(2)}` : `from $${min.toFixed(2)}`;
+      price.textContent = o.value ? money(o.dataset.price) : `from ${money(min)}`;
       note.textContent = "";
     };
     prod.querySelector(".minus").onclick = () => (qty.value = Math.max(1, +qty.value - 1));
-    prod.querySelector(".plus").onclick = () => (qty.value = +qty.value + 1);
-    // Add the chosen option to the cart; checkout happens on the cart page.
+    prod.querySelector(".plus").onclick = () => (qty.value = Math.min(MAX_QTY, +qty.value + 1));
     const photo = document.querySelector(".product-layout figure img");
-    prod.querySelector(".add").onclick = () => {
-      if (!sel.value) { note.textContent = "Please select Material."; return; }
+    const add = prod.querySelector(".add");
+    add.onclick = () => {
+      if (!sel.value) { note.textContent = `Please select ${optionName}.`; return; }
       const o = sel.selectedOptions[0];
-      Cart.add({
+      const added = Math.max(1, Math.min(MAX_QTY, Math.floor(+qty.value || 1)));
+      const item = {
         slug: prod.dataset.slug,
-        title: prod.dataset.title,
+        title: prod.querySelector("h1")?.textContent.trim() || prod.dataset.title,
+        option: optionName,
         variant: sel.value,
         price: +o.dataset.price,
         image: photo ? photo.getAttribute("src").replace(/^images\//, "images/sm/") : "",
         url: location.pathname.split("/").pop() || `${prod.dataset.slug}.html`,
-        quantity: Math.max(1, Math.floor(+qty.value || 1)),
-      });
-      note.innerHTML = `Added to cart · <a href="cart.html">View cart (${Cart.count()})</a>`;
-      qty.value = 1;
+        quantity: added,
+      };
+      note.textContent = "";
+      add.disabled = true; add.classList.add("loading");
+      setTimeout(() => {
+        Cart.add(item);
+        add.disabled = false; add.classList.remove("loading");
+        showMiniCart({ ...item, added });
+      }, 450);
     };
   }
 
   /* ---------- Cart page ---------- */
   const cartEl = document.querySelector("#cart");
   if (cartEl) {
-    const shipping = +(cartEl.dataset.shipping || 0);
-    const shippingLabel = cartEl.dataset.shippingLabel || money(shipping);
     const failed = new URLSearchParams(location.search).get("payment") === "failed";
-    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-
+    const x = `<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 3l10 10M13 3L3 13"/></svg>`;
     const render = (message = failed ? "Your payment didn't go through, so nothing was charged. Please try again." : "") => {
       const items = Cart.read();
       if (!items.length) {
-        cartEl.innerHTML = `<div class="cart-empty"><p>Your cart is empty.</p><a class="btn" href="shop.html">Back to the shop</a></div>`;
+        cartEl.innerHTML = `<div class="cart-empty"><p>You have nothing in your shopping cart.</p><a class="btn btn-solid" href="shop.html">Continue Shopping</a></div>`;
         return;
       }
       const subtotal = items.reduce((n, i) => n + i.price * i.quantity, 0);
@@ -276,23 +341,20 @@
               <a class="cart-thumb" href="${esc(i.url)}">${i.image ? `<img src="${esc(i.image)}" alt="">` : ""}</a>
               <div class="cart-desc">
                 <a class="cart-title" href="${esc(i.url)}">${esc(i.title)}</a>
-                <p class="cart-variant">${esc(i.variant)}</p>
-                <button class="cart-remove" type="button">Remove</button>
+                <p class="cart-variant">${esc(i.option || "Material")}: ${esc(i.variant)}</p>
               </div>
-              <div class="qty cart-qty"><button class="minus" type="button" aria-label="Decrease">−</button><span>${i.quantity}</span><button class="plus" type="button" aria-label="Increase">+</button></div>
+              <div class="cart-qty"><button class="minus" type="button" aria-label="Decrease quantity">−</button><span>${i.quantity}</span><button class="plus" type="button" aria-label="Increase quantity">+</button></div>
               <p class="cart-price">${money(i.price * i.quantity)}</p>
+              <button class="cart-remove" type="button" aria-label="Remove ${esc(i.title)}">${x}</button>
             </li>`).join("")}
         </ul>
         <div class="cart-summary">
-          <p><span>Subtotal</span><span>${money(subtotal)}</span></p>
-          <p><span>Shipping</span><span>${esc(shippingLabel)}</span></p>
-          <p class="cart-total"><span>Total</span><span>${money(subtotal + shipping)}</span></p>
-          <button class="btn btn-black cart-checkout" type="button">Check out with PayPal</button>
+          <p class="cart-subtotal"><span>Subtotal</span><span>${money(subtotal)}</span></p>
+          <button class="btn btn-solid cart-checkout" type="button">Checkout</button>
           <p class="cart-note" role="status">${esc(message)}</p>
         </div>`;
     };
-
-    cartEl.addEventListener("click", async (e) => {
+    cartEl.addEventListener("click", (e) => {
       const line = e.target.closest(".cart-line");
       if (line) {
         const items = Cart.read(), it = items[+line.dataset.k];
@@ -304,23 +366,7 @@
         Cart.write(items); render(""); return;
       }
       const btn = e.target.closest(".cart-checkout");
-      if (!btn) return;
-      const note = cartEl.querySelector(".cart-note");
-      btn.disabled = true; btn.textContent = "Loading…"; note.textContent = "";
-      try {
-        const r = await fetch("/api/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: Cart.read().map(({ slug, variant, quantity }) => ({ slug, variant, quantity })) }),
-        });
-        const data = await r.json().catch(() => ({}));
-        if (r.ok && data.url) { location.href = data.url; return; }
-        // No checkout function here yet (preview, or keys not set up): say so plainly.
-        note.textContent = r.status === 503 || !data.error ? "Online ordering is coming soon." : data.error;
-      } catch (err) {
-        note.textContent = "Online ordering is coming soon.";
-      }
-      btn.disabled = false; btn.textContent = "Check out with PayPal";
+      if (btn) startCheckout(btn, cartEl.querySelector(".cart-note"));
     });
     render();
   }
