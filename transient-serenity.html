@@ -19,18 +19,14 @@
     <figure class="zoom" data-group><img src="images/DSC05015.jpg" alt="Transient Serenity — flowers on a wet sidewalk, Back Bay, Boston" srcset="images/sm/DSC05015.jpg 1200w, images/DSC05015.jpg 1706w" sizes="(max-width: 900px) 92vw, 46vw" decoding="async"></figure>
     <div class="product-info" data-slug="transient-serenity" data-title="Transient Serenity">
       <h1>"Transient Serenity"</h1>
-      <div class="price">from $80.00</div>
       <div class="desc">Back Bay, Boston. 2023.<br><br>Photo by Bill Lin</div>
-      <label for="material">Material:</label>
-      <select id="material">
-        <option value="">Select Material</option>
-        <option value="Canvas Print" data-price="100">Canvas Print</option>
-        <option value="Framed Print" data-price="80">Framed Print</option>
-      </select>
-      <div class="buy-row">
-        <div class="qty"><button class="minus" aria-label="Decrease">−</button><input value="1" aria-label="Quantity" inputmode="numeric"><button class="plus" aria-label="Increase">+</button></div>
-        <button class="btn btn-black add">Add To Cart</button>
+      <p class="opt-label">Material <span class="opt-chosen"></span></p>
+      <div class="options" role="radiogroup" aria-label="Material">
+        <button type="button" role="radio" aria-checked="true" data-value="Canvas Print" data-price="100"><span>Canvas Print</span><small>$100.00</small></button>
+        <button type="button" role="radio" aria-checked="false" data-value="Framed Print" data-price="80"><span>Framed Print</span><small>$80.00</small></button>
       </div>
+      <div class="price">$100.00</div>
+      <button class="btn add-cart" type="button">Add to cart</button>
       <div class="form-note"></div>
     </div>
   </div>

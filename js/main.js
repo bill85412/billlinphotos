@@ -242,83 +242,132 @@
     btn.disabled = false; btn.classList.remove("loading"); btn.textContent = label;
   }
 
-  /* ---------- Mini cart: the "Added to cart!" panel that drops in under the header ---------- */
-  let miniCart, miniTimer;
-  function showMiniCart(item) {
-    if (!miniCart) {
-      miniCart = document.createElement("div");
-      miniCart.className = "mini-cart";
-      miniCart.hidden = true;
-      miniCart.innerHTML = `
-        <div class="mini-cart-backdrop"></div>
-        <div class="mini-cart-dialog" role="dialog" aria-label="Added to cart">
-          <div class="mini-cart-head"><span>Added to cart!</span><button class="mini-cart-close" type="button" aria-label="Close">×</button></div>
-          <div class="mini-cart-line"></div>
-          <div class="mini-cart-actions"><a class="mini-cart-view" href="cart.html"></a><button class="mini-cart-checkout" type="button">Checkout</button></div>
-          <p class="mini-cart-note" role="status"></p>
-        </div>`;
-      document.body.append(miniCart);
-      const close = () => { miniCart.classList.remove("open"); clearTimeout(miniTimer); setTimeout(() => { if (!miniCart.classList.contains("open")) miniCart.hidden = true; }, 250); };
-      miniCart.querySelector(".mini-cart-backdrop").onclick = close;
-      miniCart.querySelector(".mini-cart-close").onclick = close;
-      document.addEventListener("keydown", (e) => { if (e.key === "Escape" && miniCart.classList.contains("open")) close(); });
-      const dialog = miniCart.querySelector(".mini-cart-dialog");
-      dialog.addEventListener("mouseenter", () => clearTimeout(miniTimer));
-      dialog.addEventListener("mouseleave", () => { miniTimer = setTimeout(close, 3000); });
-      miniCart.querySelector(".mini-cart-checkout").onclick = (e) => { clearTimeout(miniTimer); startCheckout(e.currentTarget, miniCart.querySelector(".mini-cart-note")); };
-      miniCart._close = close;
+  /* ---------- Cart drawer: slides in from the right (modelled on skypathstudio.com) ---------- */
+  const SHIPPING_NOTE = "Free shipping";   // keep in step with SHIPPING in functions/_lib/catalog.js
+  const icons = {
+    x: `<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 3l10 10M13 3L3 13"/></svg>`,
+    trash: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>`,
+    truck: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2 6h12v10H2zM14 10h4l4 4v2h-8z"/><circle cx="6" cy="18" r="1.8" fill="var(--drawer-bg)"/><circle cx="18" cy="18" r="1.8" fill="var(--drawer-bg)"/></svg>`,
+    lock: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`,
+  };
+  let drawer;
+  function buildDrawer() {
+    drawer = document.createElement("div");
+    drawer.className = "drawer";
+    drawer.hidden = true;
+    drawer.innerHTML = `
+      <div class="drawer-backdrop"></div>
+      <aside class="drawer-panel" role="dialog" aria-modal="true" aria-label="Your cart">
+        <div class="drawer-head"><h2>Your cart</h2><button class="drawer-close" type="button" aria-label="Close cart">${icons.x}</button></div>
+        <div class="drawer-body"></div>
+        <div class="drawer-foot"></div>
+      </aside>`;
+    document.body.append(drawer);
+    drawer.querySelector(".drawer-backdrop").onclick = closeCart;
+    drawer.querySelector(".drawer-close").onclick = closeCart;
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && drawer.classList.contains("open")) closeCart(); });
+    drawer.addEventListener("click", (e) => {
+      const line = e.target.closest(".drawer-line");
+      if (line) {
+        const items = Cart.read(), it = items[+line.dataset.k];
+        if (!it) return;
+        if (e.target.closest(".plus")) it.quantity = Math.min(MAX_QTY, it.quantity + 1);
+        else if (e.target.closest(".minus")) it.quantity = Math.max(1, it.quantity - 1);
+        else if (e.target.closest(".remove")) items.splice(+line.dataset.k, 1);
+        else return;
+        Cart.write(items); renderDrawer(); return;
+      }
+      const btn = e.target.closest(".drawer-checkout");
+      if (btn) startCheckout(btn, drawer.querySelector(".drawer-note"));
+    });
+  }
+  function renderDrawer() {
+    const items = Cart.read();
+    const body = drawer.querySelector(".drawer-body"), foot = drawer.querySelector(".drawer-foot");
+    if (!items.length) {
+      body.innerHTML = `<div class="drawer-empty">${cart}<p>Your cart is empty</p><a href="shop.html">Continue shopping →</a></div>`;
+      foot.hidden = true; foot.innerHTML = "";
+      return;
     }
-    miniCart.querySelector(".mini-cart-line").innerHTML = `
-      ${item.image ? `<img src="${esc(item.image)}" alt="">` : "<span></span>"}
-      <div><p class="mini-cart-title">${esc(item.title)}</p><p class="mini-cart-variant">${esc(item.variant)} · ${item.added}x</p></div>
-      <p class="mini-cart-price">${money(item.price * item.added)}</p>`;
-    miniCart.querySelector(".mini-cart-view").textContent = `View Cart (${Cart.count()})`;
-    miniCart.querySelector(".mini-cart-note").textContent = "";
-    miniCart.hidden = false;
-    requestAnimationFrame(() => miniCart.classList.add("open"));
-    clearTimeout(miniTimer);
-    miniTimer = setTimeout(miniCart._close, 5000);
+    body.innerHTML = `<ul>${items.map((i, k) => `
+      <li class="drawer-line" data-k="${k}">
+        <a class="drawer-thumb" href="${esc(i.url)}">${i.image ? `<img src="${esc(i.image)}" alt="">` : ""}</a>
+        <div class="drawer-info">
+          <a class="drawer-title" href="${esc(i.url)}">${esc(i.title)}</a>
+          <p class="drawer-variant">${esc(i.variant)}</p>
+          <div class="drawer-row">
+            <p class="drawer-price">${money(i.price * i.quantity)}</p>
+            <div class="stepper"><button class="minus" type="button" aria-label="Decrease quantity"${i.quantity <= 1 ? " disabled" : ""}>−</button><span>${i.quantity}</span><button class="plus" type="button" aria-label="Increase quantity"${i.quantity >= MAX_QTY ? " disabled" : ""}>+</button></div>
+            <button class="remove" type="button" aria-label="Remove ${esc(i.title)}">${icons.trash}</button>
+          </div>
+        </div>
+      </li>`).join("")}</ul>`;
+    const subtotal = items.reduce((n, i) => n + i.price * i.quantity, 0);
+    foot.hidden = false;
+    foot.innerHTML = `
+      <p class="drawer-subtotal"><span>Subtotal</span><span>${money(subtotal)}</span></p>
+      <p class="drawer-ship">${icons.truck}${SHIPPING_NOTE}</p>
+      <button class="drawer-checkout" type="button">Checkout</button>
+      <p class="drawer-note" role="status"></p>
+      <p class="drawer-secure">${icons.lock}Secure checkout with PayPal · cards accepted</p>`;
+  }
+  function openCart() {
+    if (!drawer) buildDrawer();
+    renderDrawer();
+    drawer.hidden = false;
+    document.documentElement.classList.add("no-scroll");
+    requestAnimationFrame(() => requestAnimationFrame(() => drawer.classList.add("open")));
+    drawer.querySelector(".drawer-close").focus({ preventScroll: true });
+  }
+  function closeCart() {
+    drawer.classList.remove("open");
+    document.documentElement.classList.remove("no-scroll");
+    setTimeout(() => { if (!drawer.classList.contains("open")) drawer.hidden = true; }, 320);
+  }
+  // The header cart icon opens the drawer (cart.html stays as a full page, e.g. after cancelling PayPal).
+  if (!document.querySelector("#cart")) {
+    document.querySelectorAll(".site-header .cart").forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); openCart(); }));
   }
 
-  /* ---------- Product page ---------- */
+  /* ---------- Product page: option buttons, "Adding…", then the drawer ---------- */
   const prod = document.querySelector(".product-info");
   if (prod) {
-    const sel = prod.querySelector("select");
+    const opts = [...prod.querySelectorAll(".options [data-value]")];
     const price = prod.querySelector(".price");
-    const qty = prod.querySelector(".qty input");
+    const chosen = prod.querySelector(".opt-chosen");
     const note = prod.querySelector(".form-note");
-    const optionName = (prod.querySelector("label[for]")?.textContent || "Option:").replace(/:\s*$/, "");
-    const min = Math.min(...[...sel.options].filter((o) => o.value).map((o) => +o.dataset.price));
-    sel.onchange = () => {
-      const o = sel.selectedOptions[0];
-      price.textContent = o.value ? money(o.dataset.price) : `from ${money(min)}`;
+    const optionName = prod.querySelector(".options")?.getAttribute("aria-label") || "Option";
+    let current = opts.find((o) => o.getAttribute("aria-checked") === "true") || opts[0];
+    const pick = (o) => {
+      current = o;
+      opts.forEach((b) => b.setAttribute("aria-checked", b === o ? "true" : "false"));
+      price.textContent = money(o.dataset.price);
+      if (chosen) chosen.textContent = o.dataset.value;
       note.textContent = "";
     };
-    prod.querySelector(".minus").onclick = () => (qty.value = Math.max(1, +qty.value - 1));
-    prod.querySelector(".plus").onclick = () => (qty.value = Math.min(MAX_QTY, +qty.value + 1));
+    opts.forEach((o) => (o.onclick = () => pick(o)));
+    if (current) pick(current);
     const photo = document.querySelector(".product-layout figure img");
-    const add = prod.querySelector(".add");
+    const add = prod.querySelector(".add-cart");
+    const label = add.textContent;
     add.onclick = () => {
-      if (!sel.value) { note.textContent = `Please select ${optionName}.`; return; }
-      const o = sel.selectedOptions[0];
-      const added = Math.max(1, Math.min(MAX_QTY, Math.floor(+qty.value || 1)));
+      if (!current) return;
       const item = {
         slug: prod.dataset.slug,
-        title: prod.querySelector("h1")?.textContent.trim() || prod.dataset.title,
+        title: prod.dataset.title || prod.querySelector("h1")?.textContent.trim(),
         option: optionName,
-        variant: sel.value,
-        price: +o.dataset.price,
+        variant: current.dataset.value,
+        price: +current.dataset.price,
         image: photo ? photo.getAttribute("src").replace(/^images\//, "images/sm/") : "",
         url: location.pathname.split("/").pop() || `${prod.dataset.slug}.html`,
-        quantity: added,
+        quantity: 1,
       };
-      note.textContent = "";
-      add.disabled = true; add.classList.add("loading");
+      add.disabled = true; add.classList.add("adding"); add.textContent = "Adding…";
       setTimeout(() => {
         Cart.add(item);
-        add.disabled = false; add.classList.remove("loading");
-        showMiniCart({ ...item, added });
-      }, 450);
+        add.disabled = false; add.classList.remove("adding"); add.textContent = label;
+        openCart();
+      }, 600);
     };
   }
 
