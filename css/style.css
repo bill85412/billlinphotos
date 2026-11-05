@@ -243,6 +243,12 @@ figure.zoom:hover img { opacity: .9; }
 .crumbs { font-size: 13px; margin-bottom: 18px; }
 .crumbs span { margin: 0 6px; }
 .product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 3vw; align-items: start; }
+/* Portrait/square prints: the whole photo fits on screen without scrolling */
+.product-layout figure img { display: block; max-width: 100%; max-height: calc(100vh - 200px); max-height: calc(100svh - 200px); width: auto; height: auto; margin: 0 auto; }
+/* Landscape/panorama prints (.wide, set from the photo's shape): photo on top, text and buying below in two columns */
+.product-layout.wide { grid-template-columns: 1fr; gap: 40px; }
+.product-layout.wide figure img { width: 100%; max-height: 72vh; object-fit: contain; }
+.product-layout.wide .product-info { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 3vw; align-items: start; }
 .product-info h1 { font-size: clamp(28px, 2.9vw, 38px); }
 .product-info .price { font-family: var(--serif); font-size: 18px; margin: 16px 0 14px; }
 .product-info .desc { font-family: var(--serif); font-size: 17px; line-height: 1.7; margin-bottom: 24px; }
@@ -379,6 +385,8 @@ main > .has-footer { flex: 1 0 auto; }
   .grid-3 { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .product-grid { --rh: 220px; }
   .product-layout { grid-template-columns: 1fr; gap: 30px; }
+  .product-layout.wide .product-info { grid-template-columns: 1fr; gap: 0; }
+  .product-layout figure img { max-height: 78vh; }
 }
 @media (max-width: 560px) {
   .grid-3 { grid-template-columns: 1fr; }

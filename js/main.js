@@ -272,6 +272,13 @@
     window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(layoutCallouts, 150); });
   }
 
+  /* ---------- Product page: landscape photos go on top (.wide), portrait ones sit beside the text ---------- */
+  const prodFig = document.querySelector(".product-layout figure img");
+  if (prodFig) {
+    const shape = () => prodFig.naturalWidth && prodFig.closest(".product-layout").classList.toggle("wide", prodFig.naturalWidth / prodFig.naturalHeight >= 1.25);
+    prodFig.complete ? shape() : prodFig.addEventListener("load", shape, { once: true });
+  }
+
   /* ---------- Shop grid: make sure every card knows its photo's shape (--ar), for the justified rows ---------- */
   document.querySelectorAll(".product-card").forEach((c) => {
     if (c.style.getPropertyValue("--ar")) return;
