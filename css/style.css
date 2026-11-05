@@ -178,7 +178,6 @@ figure.zoom:hover img { opacity: .9; }
 .blog-head, .post-card, .post-grid { max-width: 1120px; margin-left: auto; margin-right: auto; }
 .blog-head { padding-bottom: 34px; margin-bottom: 56px; border-bottom: 1px solid #111; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
 .blog-head h1 { font-size: clamp(48px, 7vw, 88px); line-height: 1; }
-.blog-head p { font-family: var(--serif); font-style: italic; font-size: 19px; max-width: 34ch; }
 .post-card { display: grid; gap: 22px; }
 .post-card-img { display: block; overflow: hidden; }
 .post-card-img img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; transition: transform .8s cubic-bezier(.2,.7,.2,1); }
