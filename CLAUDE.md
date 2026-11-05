@@ -1,4 +1,4 @@
-# billlinphoto.com — notes for Claude
+# billlinphotos.com — notes for Claude
 
 Bill Lin's street-photography site. Plain static HTML/CSS/JS, no build step. Hosted from this repo (Cloudflare Pages auto-deploys `main`). The owner edits by asking Claude in chat; he does not edit code himself. Reply to him in Traditional Chinese (Taiwan).
 
@@ -8,7 +8,7 @@ Bill Lin's street-photography site. Plain static HTML/CSS/JS, no build step. Hos
 - `js/config.js` — shop settings (Shopify store address and public token, shipping note, multi-print discount); see Shop below.
 - `images/` — all photos, flat folder, named by camera file number (e.g. `DSC05015.jpg`).
 - `favicon.svg` + `apple-touch-icon.png` (BL monogram), `sitemap.xml`, `robots.txt`, `_headers` (Cloudflare cache headers: images 30 days; CSS/JS revalidate on every visit so edits show up at once).
-- Every public page's `<head>` has a page-specific `description`, `canonical` (pretty URL without `.html`, as Cloudflare Pages serves it), Open Graph tags (`og:image` = the page's lead photo, absolute `https://billlinphoto.com/images/...`) and `twitter:card`; `cart.html` and `404.html` are `noindex`. A new page gets the same tags and a line in `sitemap.xml`.
+- Every public page's `<head>` has a page-specific `description`, `canonical` (pretty URL without `.html`, as Cloudflare Pages serves it), Open Graph tags (`og:image` = the page's lead photo, absolute `https://billlinphotos.com/images/...`) and `twitter:card`; `cart.html` and `404.html` are `noindex`. A new page gets the same tags and a line in `sitemap.xml`.
 
 ## Pages
 - `index.html` home (hero, about blurb, shop collage)
