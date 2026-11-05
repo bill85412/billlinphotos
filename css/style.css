@@ -170,8 +170,6 @@ figure.zoom:hover img { opacity: .9; }
 
 /* Boston */
 .page-title { padding: 130px var(--gutter) 60px; text-align: center; }
-.season-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 8%; padding: 30px 8% 70px; }
-.season-grid span { display: flex; align-items: center; justify-content: center; height: 56px; background: #000; color: #fff; font-family: var(--serif); font-size: 16px; }
 
 /* ---------- Blog ---------- */
 .blog-list { padding: 136px var(--gutter) 60px; }
@@ -248,7 +246,6 @@ figure.zoom:hover img { opacity: .9; }
   .shop-collage .stage { grid-template-columns: 1fr; gap: 44px; padding: 90px var(--gutter); }
   .shop-collage .collage { grid-column: 1; grid-row: 1; }
   .shop-collage .cta { grid-column: 1; grid-row: 2; }
-  .season-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
   .world-map .label { font-size: 28px; }
   .world-map .tip { font-size: 14px; }
   .portrait-row { grid-template-columns: repeat(3, 1fr); gap: 10px; }

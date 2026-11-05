@@ -12,7 +12,7 @@ Bill Lin's street-photography site. Plain static HTML/CSS/JS, no build step. Hos
 - `index.html` home (hero, about blurb, shop collage)
 - `about.html`
 - `gallery.html` — world map of cities (inline SVG in `.city-section`; Boston → `boston.html`, New York → `new-york.html`, the other six are "coming soon"), masonry, "Autumn in Boston 2023", "New York City" (`id="new-york"`)
-- `boston.html` — Boston masonry album (4 columns, season buttons)
+- `boston.html` — Boston masonry album (4 columns)
 - `new-york.html` — New York masonry album (3 columns); the same photos also appear in the Gallery page's New York City section
 - `blog.html` — list of posts; `autumn-in-boston.html` — the one post
 - `shop.html` — product grid with category filter (`data-cats` on each card: prints / postcards / presets); `transient-serenity.html` — product page
