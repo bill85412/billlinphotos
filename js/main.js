@@ -130,6 +130,13 @@
     });
   }
 
+  /* ---------- World map: size each callout box to its text ---------- */
+  document.querySelectorAll(".world-map .callout").forEach((g) => {
+    let w = 0;
+    g.querySelectorAll("text").forEach((t) => { try { w = Math.max(w, t.getBBox().width); } catch (e) {} });
+    if (w) g.querySelector(".label-box").setAttribute("width", (w + 18).toFixed(1));
+  });
+
   /* ---------- Shop category filter ---------- */
   const cats = document.querySelector(".shop-cats");
   if (cats) {
