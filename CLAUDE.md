@@ -7,7 +7,7 @@ Bill Lin's street-photography site. Plain static HTML/CSS/JS, no build step. Hos
 - `css/style.css` — all styles; colors/fonts are tokens at the top (`--gray`, `--sage`, `--serif` = Cormorant Garamond, `--sans`).
 - `js/config.js` — shop settings (Shopify store address and public token, shipping note, multi-print discount); see Shop below.
 - `images/` — all photos, flat folder, named by camera file number (e.g. `DSC05015.jpg`).
-- `favicon.svg` + `apple-touch-icon.png` (BL monogram), `sitemap.xml`, `robots.txt`, `_headers` (Cloudflare cache headers).
+- `favicon.svg` + `apple-touch-icon.png` (BL monogram), `sitemap.xml`, `robots.txt`, `_headers` (Cloudflare cache headers: images 30 days; CSS/JS revalidate on every visit so edits show up at once).
 - Every public page's `<head>` has a page-specific `description`, `canonical` (pretty URL without `.html`, as Cloudflare Pages serves it), Open Graph tags (`og:image` = the page's lead photo, absolute `https://billlinphoto.com/images/...`) and `twitter:card`; `cart.html` and `404.html` are `noindex`. A new page gets the same tags and a line in `sitemap.xml`.
 
 ## Pages
