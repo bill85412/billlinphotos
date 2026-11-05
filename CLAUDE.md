@@ -11,7 +11,7 @@ Bill Lin's street-photography site. Plain static HTML/CSS/JS, no build step. Hos
 ## Pages
 - `index.html` home (hero, about blurb, shop collage)
 - `about.html`
-- `gallery.html` — city buttons (only Boston links anywhere), masonry, "Autumn in Boston 2023", "New York City"
+- `gallery.html` — world map of cities (inline SVG in `.city-section`; Boston → `boston.html`, New York → `#new-york` section, the other six are "coming soon"), masonry, "Autumn in Boston 2023", "New York City" (`id="new-york"`)
 - `boston.html` — Boston masonry album
 - `blog.html` — list of posts; `autumn-in-boston.html` — the one post
 - `shop.html` — product grid with category filter (`data-cats` on each card: prints / postcards / presets); `transient-serenity.html` — product page
@@ -21,7 +21,7 @@ Bill Lin's street-photography site. Plain static HTML/CSS/JS, no build step. Hos
 ## Common edits
 - **Add photos to an album:** add `<figure class="zoom"><img src="images/NAME.jpg" alt="..."></figure>` inside the `.masonry` (no `loading="lazy"` in masonry) or grid. A `data-group` ancestor scopes the lightbox's prev/next.
 - **New blog post:** copy `autumn-in-boston.html` (keep `data-page="blog"`), add a `.blog-card` to `blog.html` (newest first).
-- **New city album:** copy `boston.html`, then turn that city's `<span>` in `gallery.html`'s `.city-grid` into an `<a href>`.
+- **New city album:** copy `boston.html`. In `gallery.html`, turn that city's map pin from `<g class="pin soon" ...>` into `<a class="pin live" href="CITY.html" aria-label="CITY photos">` with a `<circle class="halo" r="11">` plus `<circle class="dot" r="5.5">` (copy the Boston pin; drop the "Coming soon" tip text), and turn its `<span>` in `.city-list` into `<a href="CITY.html">CITY</a>`. New cities need a pin added at the projected position: the map was made with d3 geoNaturalEarth1 fitted to a 1000×470 viewBox from world-atlas countries-110m without Antarctica (projected examples: Boston 320,136 · Taipei 828,191 · Sydney 897,381).
 - **New product:** copy `transient-serenity.html` (update `data-slug`, `data-title`, options with `data-price`), add a `.product-card` to `shop.html`, add the slug to `stripeLinks`.
 
 ## Photos

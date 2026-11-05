@@ -29,7 +29,7 @@
 ```
 index.html               首頁
 about.html               About
-gallery.html             Gallery（城市按鈕、瀑布流、Autumn in Boston、New York City）
+gallery.html             Gallery（世界地圖、瀑布流、Autumn in Boston、New York City）
 boston.html              Boston 相簿
 blog.html                Blog 列表
 autumn-in-boston.html    文章
