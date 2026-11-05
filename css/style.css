@@ -85,7 +85,7 @@ h4 { font-size: clamp(17px, 1.7vw, 19px); line-height: 1.29; }
 .inner { width: 100%; max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
 
 /* ---------- Home ---------- */
-.hero { min-height: 605px; height: 80vh; display: flex; align-items: center; justify-content: center; text-align: center; }
+.hero { min-height: 605px; height: 100vh; background-position: center bottom; display: flex; align-items: center; justify-content: center; text-align: center; }
 .hero .inner { display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 50px; }
 .hero h3 { font-style: italic; margin-bottom: 30px; }
 
