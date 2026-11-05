@@ -20,6 +20,7 @@
 
   /* ---------- Header & footer (shared across pages) ---------- */
   const nav = [
+    ["index.html", "Home", "home"],
     ["about.html", "About", "about"],
     ["gallery.html", "Gallery", "gallery"],
     ["blog.html", "Blog", "blog"],
