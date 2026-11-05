@@ -169,6 +169,8 @@ figure.zoom img { transition: opacity .3s; }
 figure.zoom:hover img { opacity: .9; }
 
 /* Masonry */
+.pano { margin-bottom: 8px; }
+.pano img { width: 100%; display: block; }
 .masonry { display: flex; gap: var(--gap, 5px); align-items: flex-start; }
 .masonry .col { flex: 1; display: flex; flex-direction: column; gap: var(--gap, 5px); min-width: 0; }
 .masonry figure img { width: 100%; height: auto; }
@@ -225,6 +227,7 @@ figure.zoom:hover img { opacity: .9; }
 .product-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px 20px; }
 .product-card .ph { aspect-ratio: 3 / 4; overflow: hidden; }
 .product-card img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s; }
+.product-card .ph.wide img { object-fit: contain; }
 .product-card:hover img { transform: scale(1.03); }
 .product-card h3 { font-size: 16px; margin-top: 14px; }
 .product-card p { font-family: var(--serif); font-size: 16px; margin-top: 6px; }

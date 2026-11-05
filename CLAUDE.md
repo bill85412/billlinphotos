@@ -14,11 +14,11 @@ Bill Lin's street-photography site. Plain static HTML/CSS/JS, no build step. Hos
 - `index.html` home (hero, about blurb, shop collage)
 - `about.html` — hero line ("An Aviator, A Photographer, An Engineer.") and an "About Me" bio (`.about-bio`, ~500 words, photography-focused)
 - `gallery.html` — opens with the world map of cities (no quote section) (inline SVG in `.city-section`; Boston → `boston.html`, New York → `new-york.html`, the other six are "coming soon"), masonry, "Autumn in Boston 2023", "New York City" (`id="new-york"`)
-- `boston.html` — Boston masonry album (4 columns)
+- `boston.html` — Boston album: a full-width panorama (`figure.zoom.pano`, `boston-seaport-night.jpg`) above a 4-column masonry; panoramas go in `.pano` figures, not in the masonry
 - `new-york.html` — New York masonry album (3 columns); the same photos also appear in the Gallery page's New York City section
 - `blog.html` — list of posts; `autumn-in-boston.html` — the one post
 - `cart.html` — cart page (same view as the cart drawer, rendered by `js/main.js`)
-- `shop.html` — product grid with category filter (`data-cats` on each card: prints / postcards / presets); `transient-serenity.html` — product page
+- `shop.html` — product grid with category filter (`data-cats` on each card: prints / postcards / presets); product pages `boston-seaport-night.html` ("Seaport Nights", panorama; its shop card uses `.ph.wide` so the whole image shows) and `transient-serenity.html`
 - `404.html`
 - There is intentionally no contact page.
 
