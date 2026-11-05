@@ -169,8 +169,6 @@ figure.zoom img { transition: opacity .3s; }
 figure.zoom:hover img { opacity: .9; }
 
 /* Masonry */
-.pano { margin-bottom: 8px; }
-.pano img { width: 100%; display: block; }
 .masonry { display: flex; gap: var(--gap, 5px); align-items: flex-start; }
 .masonry .col { flex: 1; display: flex; flex-direction: column; gap: var(--gap, 5px); min-width: 0; }
 .masonry figure img { width: 100%; height: auto; }
