@@ -247,7 +247,7 @@ figure.zoom:hover img { opacity: .9; }
 .product-layout figure img { display: block; max-width: 100%; max-height: calc(100vh - 200px); max-height: calc(100svh - 200px); width: auto; height: auto; margin: 0 auto; }
 /* Landscape/panorama prints (.wide, set from the photo's shape): photo on top, text and buying below in two columns */
 .product-layout.wide { grid-template-columns: 1fr; gap: 40px; }
-.product-layout.wide figure img { width: 100%; max-height: 72vh; object-fit: contain; }
+.product-layout.wide figure img { width: 100%; max-height: min(72vh, calc(100vh - 340px)); object-fit: contain; }
 .product-layout.wide .product-info { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 3vw; align-items: start; }
 .product-info h1 { font-size: clamp(28px, 2.9vw, 38px); }
 .product-info .price { font-family: var(--serif); font-size: 18px; margin: 16px 0 14px; }
