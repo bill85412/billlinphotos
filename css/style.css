@@ -203,9 +203,8 @@ figure.zoom:hover img { opacity: .9; }
 }
 
 .post { max-width: 820px; margin: 0 auto; padding: 136px var(--gutter) 80px; }
-.post-meta { text-align: center; font-family: var(--serif); font-size: 16px; }
-.post-meta .dot { margin: 0 8px; }
-.post h1 { text-align: center; margin: 22px 0 48px; }
+.post h1 { text-align: center; margin: 0 0 14px; }
+.post .post-date { text-align: center; font-family: var(--sans); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 48px; }
 .post p { font-family: var(--serif); font-size: 17px; line-height: 1.55; margin-bottom: 14px; text-align: justify; }
 .post figure { margin: 34px 0; }
 .post figcaption { font-family: var(--serif); font-size: 18.7px; text-align: center; margin-top: 14px; }
