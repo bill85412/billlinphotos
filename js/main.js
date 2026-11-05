@@ -62,7 +62,7 @@
 
   const footer = document.createElement("footer");
   footer.className = "site-footer";
-  footer.innerHTML = `<p>Copyright © 2023 by Bill Lin</p>`;
+  footer.innerHTML = `<p>Copyright © ${new Date().getFullYear()} by Bill Lin</p>`;
   document.body.append(footer);
 
   const onScroll = () => header.classList.toggle("scrolled", window.scrollY > 40);
