@@ -257,7 +257,6 @@ figure.zoom:hover img { opacity: .9; }
 .product-info .price { font-family: var(--serif); font-size: 18px; margin: 16px 0 14px; }
 .product-info .desc { font-family: var(--serif); font-size: 17px; line-height: 1.7; margin-bottom: 24px; }
 .opt-label { font-size: 15px; margin-bottom: 10px; }
-.opt-chosen { color: rgba(0,0,0,.55); margin-left: 6px; }
 .opt-group { margin-bottom: 20px; }
 .options { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
 .options button {

@@ -532,7 +532,7 @@
       wrap.innerHTML = model.options.filter((o) => !(o.values.length === 1 && o.values[0] === "Default Title")).map((o) => {
         const prices = new Set(o.values.map((val) => { const v = find({ ...sel, [o.name]: val }); return v ? v.price.amount : ""; }));
         return `<div class="opt-group">
-          <p class="opt-label">${esc(o.name)} <span class="opt-chosen">${esc(sel[o.name] || "")}</span></p>
+          <p class="opt-label">${esc(o.name)}</p>
           <div class="options" role="radiogroup" aria-label="${esc(o.name)}">${o.values.map((val) => {
             const v = find({ ...sel, [o.name]: val });
             const off = !v || !v.available;
