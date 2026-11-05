@@ -47,4 +47,5 @@ The owner chose skypathstudio.com as the model: the site keeps its own pages and
 - Never ask the owner to paste private keys (Admin API tokens, passwords) into chat; the public Storefront token is the only key the site uses.
 
 ## Commits
+After any change to `css/` or `js/`, run `python3 tools/stamp_assets.py` before committing: it puts a content hash on every `css/style.css`, `js/main.js` and `js/config.js` link (`?v=…`). The billlinphotos.com zone forces a 4-hour browser cache on CSS/JS, so without a new `?v=` visitors keep the old files. New pages must use the same links (copy them from an existing page, then re-run the script).
 Commit straight to `main` with a short message describing the change; the site redeploys in about a minute.
