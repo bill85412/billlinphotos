@@ -12,7 +12,7 @@ Bill Lin's street-photography site. Plain static HTML/CSS/JS, no build step. Hos
 
 ## Pages
 - `index.html` home (hero, about blurb, shop collage)
-- `about.html`
+- `about.html` — hero line ("An Aviator, A Photographer, An Engineer.") and an "About Me" bio (`.about-bio`, ~500 words, photography-focused)
 - `gallery.html` — world map of cities (inline SVG in `.city-section`; Boston → `boston.html`, New York → `new-york.html`, the other six are "coming soon"), masonry, "Autumn in Boston 2023", "New York City" (`id="new-york"`)
 - `boston.html` — Boston masonry album (4 columns)
 - `new-york.html` — New York masonry album (3 columns); the same photos also appear in the Gallery page's New York City section
