@@ -3,7 +3,7 @@
 Bill Lin's street-photography site. Plain static HTML/CSS/JS, no build step. Hosted from this repo (Cloudflare Pages auto-deploys `main`). The owner edits by asking Claude in chat; he does not edit code himself. Reply to him in Traditional Chinese (Taiwan).
 
 ## Structure
-- One `.html` file per page. Every page has the same `<head>` and `<main>` wrapper; header, mobile menu and footer are injected by `js/main.js` — edit nav links, Instagram/YouTube URLs and the footer there, not in each page.
+- One `.html` file per page. Every page has the same `<head>` and `<main>` wrapper; header, mobile menu and footer are injected by `js/main.js` (the copyright footer is placed inside the bottom of the last section of `<main>`, over its photo or colour, with no band of its own; the year is automatic) — edit nav links, Instagram/YouTube URLs and the footer there, not in each page.
 - `css/style.css` — all styles; colors/fonts are tokens at the top (`--gray`, `--sage`, `--serif` = Cormorant Garamond, `--sans`).
 - `js/config.js` — shop settings (Shopify store address and public token, shipping note, multi-print discount); see Shop below.
 - `images/` — all photos, flat folder, named by camera file number (e.g. `DSC05015.jpg`).

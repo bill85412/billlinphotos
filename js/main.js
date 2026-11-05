@@ -63,7 +63,20 @@
   const footer = document.createElement("footer");
   footer.className = "site-footer";
   footer.innerHTML = `<p>Copyright © ${new Date().getFullYear()} by Bill Lin</p>`;
-  document.body.append(footer);
+  // The copyright sits at the bottom of the page's last section (over its photo or colour), not in a band of its own.
+  const lastSection = document.querySelector("main") && document.querySelector("main").lastElementChild;
+  if (lastSection) {
+    lastSection.classList.add("has-footer");
+    lastSection.append(footer);
+    const fitFooter = () => {
+      lastSection.style.paddingBottom = "";
+      const pad = parseFloat(getComputedStyle(lastSection).paddingBottom) || 0;
+      const need = footer.offsetHeight + 12;
+      if (pad < need) lastSection.style.paddingBottom = `${pad + footer.offsetHeight}px`;
+    };
+    fitFooter();
+    window.addEventListener("resize", fitFooter);
+  } else document.body.append(footer);
 
   const onScroll = () => header.classList.toggle("scrolled", window.scrollY > 40);
   window.addEventListener("scroll", onScroll, { passive: true });
