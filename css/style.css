@@ -117,28 +117,29 @@ h4 { font-size: clamp(17px, 1.7vw, 19px); line-height: 1.29; }
 .quote-hero { min-height: 539px; height: 72vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; --overlay: .15; }
 .quote-hero h2 { font-style: italic; max-width: 860px; margin: 0 auto; }
 .quote-hero h4 { font-style: italic; margin-top: 22px; }
-/* World map of cities: solid land over the photo; black pins link to albums, small grey pins are coming soon.
+/* World map of cities, all in greyscale (the background photo too) so the bright pins stand out.
+   Bright amber pins link to albums, small white pins are coming soon.
    Hovering a pin draws a leader line up and to the right, ending in a solid black name label. */
-.city-section { min-height: 504px; display: flex; align-items: center; --overlay: .55; }
+.city-section { min-height: 504px; display: flex; align-items: center; --overlay: .5; background-color: #808080; background-blend-mode: luminosity; }
 .map-wrap { width: 100%; max-width: 1180px; margin: 0 auto; padding: 100px var(--gutter) 70px; }
 .map-eyebrow { text-align: center; font-size: 11px; letter-spacing: .24em; text-transform: uppercase; margin-bottom: 22px; }
 .world-map { display: block; width: 100%; height: auto; overflow: visible; }
-.world-map .land { fill: #dcdcd6; stroke: #fff; stroke-width: .6; stroke-linejoin: round; }
+.world-map .land { fill: #a9a9a9; stroke: #e4e4e4; stroke-width: .6; stroke-linejoin: round; }
 .world-map .hit { fill: transparent; }
 .world-map .pin { cursor: pointer; outline: none; }
-.world-map .live .dot { fill: #111; stroke: #fff; stroke-width: 2; transition: r .2s; }
-.world-map .live .halo { fill: none; stroke: #111; stroke-width: 1.6; transform-box: fill-box; transform-origin: center; animation: pin-pulse 2.6s ease-out infinite; }
+.world-map .live .dot { fill: #ffc533; stroke: #fff6d6; stroke-width: 1.5; filter: drop-shadow(0 0 4px #ffc533); transition: r .2s; }
+.world-map .live .halo { fill: none; stroke: #ffc533; stroke-width: 1.8; transform-box: fill-box; transform-origin: center; animation: pin-pulse 2.6s ease-out infinite; }
 .world-map .live:hover .dot, .world-map .live:focus-visible .dot { r: 7; }
 .world-map .soon { cursor: default; }
-.world-map .soon .dot { fill: #4a4b45; stroke: #fff; stroke-width: 1.1; transition: r .2s; }
+.world-map .soon .dot { fill: #fff; stroke: #222; stroke-width: .8; transition: r .2s; }
 .world-map .soon:hover .dot, .world-map .soon:focus .dot { r: 4.5; }
 /* callout, hidden until the pointer or keyboard focus is on its pin */
 .world-map .callout { pointer-events: none; visibility: hidden; }
-.world-map .leader { fill: none; stroke: #111; stroke-width: 1.4; stroke-dasharray: 1; stroke-dashoffset: 1; filter: drop-shadow(0 0 1px #fff); transition: stroke-dashoffset .25s ease-out; }
+.world-map .leader { fill: none; stroke: #fff; stroke-width: 1.6; stroke-dasharray: 1; stroke-dashoffset: 1; filter: drop-shadow(0 0 1.5px #000); transition: stroke-dashoffset .25s ease-out; }
 .world-map .label-box { fill: #111; transform: scaleX(0); transform-box: fill-box; transform-origin: left center; transition: transform .2s ease-out .18s; }
 .world-map .label, .world-map .tip { fill: #fff; opacity: 0; transition: opacity .15s .3s; }
-.world-map .label { font-family: var(--serif); font-size: 15px; }
-.world-map .tip { font-family: var(--sans); font-size: 8.5px; letter-spacing: .14em; text-transform: uppercase; fill: #b9bab3; }
+.world-map .label { font-family: var(--serif); font-size: 21px; }
+.world-map .tip { font-family: var(--sans); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; fill: #b9b9b9; }
 .world-map .pin:is(:hover, :focus) .callout { visibility: visible; }
 .world-map .pin:is(:hover, :focus) .leader { stroke-dashoffset: 0; }
 .world-map .pin:is(:hover, :focus) .label-box { transform: scaleX(1); }
@@ -248,8 +249,8 @@ figure.zoom:hover img { opacity: .9; }
   .shop-collage .collage { grid-column: 1; grid-row: 1; }
   .shop-collage .cta { grid-column: 1; grid-row: 2; }
   .season-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
-  .world-map .label { font-size: 22px; }
-  .world-map .tip { font-size: 12px; }
+  .world-map .label { font-size: 28px; }
+  .world-map .tip { font-size: 14px; }
   .portrait-row { grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .grid-3 { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .product-grid { grid-template-columns: repeat(2, 1fr); }
