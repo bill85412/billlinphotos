@@ -165,15 +165,24 @@
     };
     const reset = () => { s = 1; tx = 0; ty = 0; apply(false); };
     const show = () => {
-      const img = group[idx].querySelector("img");
+      const img = group[idx].tagName === "IMG" ? group[idx] : group[idx].querySelector("img");
       reset();
       lbImg.src = img.getAttribute("src");
       lbImg.alt = img.alt;
     };
     zoomables.forEach((f) => f.addEventListener("click", () => {
-      const scope = f.closest("[data-group]") || document;
-      group = scope.matches && scope.matches("figure.zoom") ? [scope] : [...scope.querySelectorAll("figure.zoom")];
-      idx = group.indexOf(f); show();
+      if (f._swiped && Date.now() - f._swiped < 400) return;
+      const gallery = f.closest(".product-gallery");
+      if (gallery) { // product page: browse the print and its room views
+        const thumbs = [...gallery.querySelectorAll(".pg-thumb")];
+        group = thumbs.map((t) => { const i = new Image(); i.src = t.dataset.src; i.alt = t.querySelector("img").alt; return i; });
+        idx = Math.max(0, thumbs.findIndex((t) => t.classList.contains("active")));
+      } else {
+        const scope = f.closest("[data-group]") || document;
+        group = scope.matches && scope.matches("figure.zoom") ? [scope] : [...scope.querySelectorAll("figure.zoom")];
+        idx = group.indexOf(f);
+      }
+      show();
       lb.classList.toggle("single", group.length < 2);
       lb.classList.add("open");
     }));
@@ -272,11 +281,33 @@
     window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(layoutCallouts, 150); });
   }
 
+  /* ---------- Product page gallery: thumbnails switch the main picture (print, living room, office) ---------- */
+  document.querySelectorAll(".product-gallery").forEach((g) => {
+    const main = g.querySelector(".pg-main img");
+    const thumbs = [...g.querySelectorAll(".pg-thumb")];
+    const pick = (t) => {
+      thumbs.forEach((x) => { x.classList.toggle("active", x === t); x.toggleAttribute("aria-current", x === t); });
+      main.srcset = t.dataset.srcset; main.src = t.dataset.src; main.alt = t.querySelector("img").alt;
+    };
+    thumbs.forEach((t) => t.addEventListener("click", () => pick(t)));
+    // swipe the main picture on touch screens
+    let x0 = null;
+    main.addEventListener("touchstart", (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+    main.addEventListener("touchend", (e) => {
+      if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null;
+      if (Math.abs(dx) < 40) return;
+      const i = thumbs.findIndex((t) => t.classList.contains("active"));
+      pick(thumbs[(i + (dx < 0 ? 1 : -1) + thumbs.length) % thumbs.length]);
+      main.closest("figure")._swiped = Date.now();
+    });
+  });
+
   /* ---------- Product page: landscape photos go on top (.wide), portrait ones sit beside the text ---------- */
-  const prodFig = document.querySelector(".product-layout figure img");
+  const prodFig = document.querySelector(".product-layout .pg-main img, .product-layout figure img");
   if (prodFig) {
+    // decided once, from the print itself (room views are all 3:2 and must not flip the layout)
     const shape = () => prodFig.naturalWidth && prodFig.closest(".product-layout").classList.toggle("wide", prodFig.naturalWidth / prodFig.naturalHeight >= 1.25);
-    prodFig.complete ? shape() : prodFig.addEventListener("load", shape, { once: true });
+    if (prodFig.complete) shape(); else prodFig.addEventListener("load", shape, { once: true });
   }
 
   /* ---------- Shop grid: make sure every card knows its photo's shape (--ar), for the justified rows ---------- */
