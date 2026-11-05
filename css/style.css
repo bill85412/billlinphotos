@@ -122,7 +122,7 @@ h4 { font-size: clamp(17px, 1.7vw, 19px); line-height: 1.29; }
    Hovering a pin draws a leader line up and to the right, ending in a solid black name label. */
 .city-section { min-height: 504px; display: flex; align-items: center; --overlay: .55; }
 .map-wrap { width: 100%; max-width: 1180px; margin: 0 auto; padding: 100px var(--gutter) 70px; }
-.map-eyebrow { text-align: center; font-size: 11px; letter-spacing: .24em; text-transform: uppercase; margin-bottom: 22px; }
+.map-eyebrow { text-align: center; font-size: 18px; letter-spacing: .26em; text-transform: uppercase; margin-bottom: 28px; text-shadow: 0 1px 6px rgba(0,0,0,.5); }
 .world-map { display: block; width: 100%; height: auto; overflow: visible; }
 .world-map .land { fill: #a9a9a9; stroke: #e4e4e4; stroke-width: .6; stroke-linejoin: round; }
 .world-map .hit { fill: transparent; }
