@@ -128,38 +128,104 @@
   document.addEventListener("contextmenu", (e) => { if (isPhoto(e.target)) e.preventDefault(); });
   document.addEventListener("dragstart", (e) => { if (e.target.tagName === "IMG") e.preventDefault(); });
 
-  /* ---------- Lightbox ("View fullsize") ---------- */
+  /* ---------- Lightbox: click a photo to view it large; zoom with wheel / pinch / double-click / buttons, drag to pan ---------- */
   const zoomables = [...document.querySelectorAll("figure.zoom")];
   if (zoomables.length) {
     const lb = document.createElement("div");
     lb.className = "lightbox";
     lb.innerHTML = `<button class="lb-close" aria-label="Close">×</button>
-      <button class="lb-prev" aria-label="Previous">‹</button><img alt=""><button class="lb-next" aria-label="Next">›</button>`;
+      <button class="lb-prev" aria-label="Previous">‹</button><img alt="" draggable="false"><button class="lb-next" aria-label="Next">›</button>
+      <div class="lb-zoom"><button class="lb-out" aria-label="Zoom out">−</button><button class="lb-in" aria-label="Zoom in">+</button></div>`;
     document.body.append(lb);
     const lbImg = lb.querySelector("img");
     let group = [], idx = 0;
-    // The lightbox shows the same 2560px page image (no larger file is published).
+    // zoom state: scale s, offset (tx, ty) in screen px, transform-origin is the image centre
+    let s = 1, tx = 0, ty = 0;
+    const maxScale = () => Math.max(2, Math.min(4, (lbImg.naturalWidth || 0) / (lbImg.clientWidth || 1) * 1.5));
+    const clamp = () => {
+      const w = lbImg.clientWidth * s, h = lbImg.clientHeight * s;
+      const mx = Math.max(0, (w - innerWidth) / 2 + 20), my = Math.max(0, (h - innerHeight) / 2 + 20);
+      tx = Math.max(-mx, Math.min(mx, tx)); ty = Math.max(-my, Math.min(my, ty));
+      if (s <= 1) { s = 1; tx = 0; ty = 0; }
+    };
+    const apply = (animate) => {
+      clamp();
+      lbImg.style.transition = animate ? "transform .25s ease" : "none";
+      lbImg.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+      lb.classList.toggle("zoomed", s > 1);
+    };
+    // zoom to scale ns keeping the screen point (cx, cy) still
+    const zoomTo = (ns, cx = innerWidth / 2, cy = innerHeight / 2, animate) => {
+      ns = Math.max(1, Math.min(maxScale(), ns));
+      const r = lbImg.getBoundingClientRect();
+      const ox = r.left + r.width / 2 - tx, oy = r.top + r.height / 2 - ty; // centre without offset
+      const px = (cx - ox - tx) / s, py = (cy - oy - ty) / s;
+      tx = cx - ox - ns * px; ty = cy - oy - ns * py; s = ns;
+      apply(animate);
+    };
+    const reset = () => { s = 1; tx = 0; ty = 0; apply(false); };
     const show = () => {
       const img = group[idx].querySelector("img");
+      reset();
       lbImg.src = img.getAttribute("src");
       lbImg.alt = img.alt;
     };
     zoomables.forEach((f) => f.addEventListener("click", () => {
       const scope = f.closest("[data-group]") || document;
-      group = [...scope.querySelectorAll("figure.zoom")];
-      idx = group.indexOf(f); show(); lb.classList.add("open");
+      group = scope.matches && scope.matches("figure.zoom") ? [scope] : [...scope.querySelectorAll("figure.zoom")];
+      idx = group.indexOf(f); show();
+      lb.classList.toggle("single", group.length < 2);
+      lb.classList.add("open");
     }));
-    const close = () => lb.classList.remove("open");
+    const close = () => { lb.classList.remove("open"); reset(); };
     lb.querySelector(".lb-close").onclick = close;
     lb.querySelector(".lb-prev").onclick = (e) => { e.stopPropagation(); idx = (idx - 1 + group.length) % group.length; show(); };
     lb.querySelector(".lb-next").onclick = (e) => { e.stopPropagation(); idx = (idx + 1) % group.length; show(); };
-    lb.addEventListener("click", (e) => { if (e.target === lb) close(); });
+    lb.querySelector(".lb-in").onclick = (e) => { e.stopPropagation(); zoomTo(s * 1.6, undefined, undefined, true); };
+    lb.querySelector(".lb-out").onclick = (e) => { e.stopPropagation(); zoomTo(s / 1.6, undefined, undefined, true); };
+    lb.addEventListener("click", (e) => { if (e.target === lb && s === 1) close(); });
+    lb.addEventListener("wheel", (e) => { e.preventDefault(); zoomTo(s * Math.exp(-e.deltaY * 0.0022), e.clientX, e.clientY); }, { passive: false });
+    lbImg.addEventListener("dblclick", (e) => { e.preventDefault(); zoomTo(s > 1 ? 1 : 2.5, e.clientX, e.clientY, true); });
+
+    // drag to pan, pinch to zoom, double-tap to zoom (pointer events cover mouse and touch)
+    const pts = new Map();
+    let startDist = 0, startScale = 1, lastTap = 0, moved = false;
+    lbImg.addEventListener("pointerdown", (e) => {
+      lbImg.setPointerCapture(e.pointerId);
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      moved = false;
+      if (pts.size === 2) { const [p1, p2] = [...pts.values()]; startDist = Math.hypot(p1.x - p2.x, p1.y - p2.y); startScale = s; }
+    });
+    lbImg.addEventListener("pointermove", (e) => {
+      const prev = pts.get(e.pointerId); if (!prev) return;
+      const cur = { x: e.clientX, y: e.clientY }; pts.set(e.pointerId, cur);
+      if (pts.size === 2) {
+        const [p1, p2] = [...pts.values()];
+        zoomTo(startScale * Math.hypot(p1.x - p2.x, p1.y - p2.y) / (startDist || 1), (p1.x + p2.x) / 2, (p1.y + p2.y) / 2);
+        moved = true;
+      } else if (s > 1) {
+        tx += cur.x - prev.x; ty += cur.y - prev.y; apply(false);
+        if (Math.abs(cur.x - prev.x) + Math.abs(cur.y - prev.y) > 2) moved = true;
+      }
+    });
+    const up = (e) => {
+      pts.delete(e.pointerId);
+      if (e.pointerType === "touch" && !moved && pts.size === 0) {
+        const now = Date.now();
+        if (now - lastTap < 300) { zoomTo(s > 1 ? 1 : 2.5, e.clientX, e.clientY, true); lastTap = 0; } else lastTap = now;
+      }
+    };
+    lbImg.addEventListener("pointerup", up);
+    lbImg.addEventListener("pointercancel", up);
     document.addEventListener("keydown", (e) => {
       if (!lb.classList.contains("open")) return;
       if (e.key === "Escape") close();
-      if (e.key === "ArrowLeft") lb.querySelector(".lb-prev").click();
-      if (e.key === "ArrowRight") lb.querySelector(".lb-next").click();
+      if (e.key === "ArrowLeft" && group.length > 1) lb.querySelector(".lb-prev").click();
+      if (e.key === "ArrowRight" && group.length > 1) lb.querySelector(".lb-next").click();
+      if (e.key === "+" || e.key === "=") lb.querySelector(".lb-in").click();
+      if (e.key === "-") lb.querySelector(".lb-out").click();
     });
+    addEventListener("resize", () => { if (lb.classList.contains("open")) apply(false); });
   }
 
   /* ---------- World map: lay out each callout label at the end of its leader line ---------- */
