@@ -33,13 +33,15 @@ The owner wants the site as sharp as possible. He sends originals (often 30–50
 Apply light unsharp mask (radius 0.6, 45%, threshold 2) only after a downscale below 75%.
 Every `<img src="images/NAME.jpg">` carries `srcset="images/sm/NAME.jpg 1200w, images/NAME.jpg <width>w"`, a `sizes` value matching its layout (see existing tags), `decoding="async"`, and `data-full="images/full/NAME.jpg"` when the full version exists — the lightbox loads `data-full`. CSS backgrounds use `images/NAME.jpg`.
 
-## Shop (Stripe + Prodigi, Cloudflare Pages Functions)
-- `functions/api/checkout.js` — POST `{slug, variant, quantity}` → creates a Stripe Checkout session from `functions/_lib/catalog.js` (prices never come from the browser) → returns `{url}`. Product page JS (`js/main.js`) redirects there; if the function is missing or not configured it shows "Online ordering is coming soon."
-- `functions/api/stripe-webhook.js` — Stripe `checkout.session.completed` → verifies the signature → creates the Prodigi order (v5 API, `https://api.prodigi.com/v5/orders`, key prefix `sandbox_`/`live_` picks the environment) → saves `prodigi_order_id` on the Stripe PaymentIntent metadata, which is also the duplicate guard. Errors return 500 so Stripe retries.
+## Shop (PayPal + Prodigi, Cloudflare Pages Functions)
+The owner is in Taiwan, where Stripe is not available, so payments go through PayPal.
+- `functions/api/checkout.js` — POST `{slug, variant, quantity}` → creates a PayPal Orders v2 order (intent CAPTURE, prices from `functions/_lib/catalog.js`, never from the browser; `custom_id` = JSON `{s,v,q}`; `shipping_preference: GET_FROM_FILE`) → returns `{url}` (the `payer-action` link). Product page JS (`js/main.js`) redirects there; if the function is missing or not configured it shows "Online ordering is coming soon."
+- `functions/api/paypal-return.js` — PayPal's return URL. Captures the order (`ORDER_ALREADY_CAPTURED` counts as success) → `order-success.html`; a failed capture → product page `?payment=failed`.
+- `functions/api/paypal-webhook.js` — `PAYMENT.CAPTURE.COMPLETED` → verifies via PayPal's verify-webhook-signature API → re-reads the order from PayPal → creates the Prodigi order (v5 API, `https://api.prodigi.com/v5/orders`; key prefix `sandbox_`/`live_` picks the environment) → writes marker `orders/<paypalOrderId>.json` in the R2 bucket, which is the duplicate guard. Errors return 500 so PayPal retries.
 - `functions/api/print-file/[name].js` — serves print files from the private R2 bucket bound as `PRINT_FILES`, only with `?token=PRINT_FILE_TOKEN`.
-- `order-success.html` — Stripe's success page.
-- Cloudflare Pages environment variables: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `PRODIGI_API_KEY`, `PRINT_FILE_TOKEN`, `SITE_URL` (e.g. https://billlinphoto.com); R2 binding `PRINT_FILES`. Never ask the owner to paste these keys into chat.
-- Tests: `node tests/shop.test.mjs` (fake Stripe and Prodigi; needs Node 18+ and a `{"type":"module"}` package.json next to a copy of `functions/` and the test, or run from a scratch copy). Run them after any change to `functions/`.
+- `functions/_lib/paypal.js` — OAuth token, REST calls, webhook verification. `PAYPAL_ENV=live` → api-m.paypal.com, otherwise sandbox.
+- Cloudflare Pages environment variables: `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`, `PAYPAL_ENV`, `PRODIGI_API_KEY`, `PRINT_FILE_TOKEN`, `SITE_URL`; R2 binding `PRINT_FILES`. Never ask the owner to paste these keys into chat.
+- Tests: copy `functions/` and `tests/shop.test.mjs` into one scratch folder with a `{"type":"module"}` package.json and run `node shop.test.mjs` (fake PayPal, Prodigi and R2; Node 18+). Run them after any change to `functions/`.
 - The Prodigi SKUs in the catalog (`GLOBAL-CAN-16X24`, `GLOBAL-CFPM-16X24`) are placeholders until confirmed in the owner's Prodigi product catalog.
 
 ## Commits

@@ -2,8 +2,7 @@
 // Prices live here, on the server, so a visitor cannot change them in the browser.
 //
 // Each product:
-//   title      name shown on the Stripe checkout page
-//   image      photo shown on the Stripe checkout page (path on this site)
+//   title      name shown on the PayPal checkout page and receipt
 //   printFile  the high-resolution print file sent to Prodigi:
 //                "r2:FILENAME"  → a file in the PRINT_FILES R2 bucket (served by /api/print-file)
 //                "https://..."  → any other address Prodigi can download from
@@ -13,7 +12,7 @@
 //                sku    Prodigi product code. Check it in the Prodigi dashboard product catalog
 //                       before going live; it decides the material and the print size.
 
-export const CURRENCY = "usd";
+export const CURRENCY = "USD";
 
 // Flat shipping charged to the buyer, in cents. 0 = free shipping (cost built into the price).
 export const SHIPPING = { amount: 0, label: "Free shipping" };
@@ -21,16 +20,9 @@ export const SHIPPING = { amount: 0, label: "Free shipping" };
 // Prodigi delivery speed for every order.
 export const PRODIGI_SHIPPING_METHOD = "budget";
 
-// Countries the Stripe checkout accepts a shipping address from.
-export const SHIP_TO = [
-  "US", "CA", "GB", "IE", "AU", "NZ", "TW", "JP", "KR", "SG", "HK",
-  "DE", "FR", "NL", "BE", "LU", "AT", "CH", "ES", "PT", "IT", "DK", "SE", "NO", "FI",
-];
-
 export const PRODUCTS = {
   "transient-serenity": {
     title: "“Transient Serenity”",
-    image: "/images/sm/DSC05015.jpg",
     printFile: "r2:transient-serenity.jpg",
     variants: {
       "Canvas Print": { price: 10000, sku: "GLOBAL-CAN-16X24" },

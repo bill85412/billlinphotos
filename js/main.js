@@ -208,7 +208,10 @@
     };
     prod.querySelector(".minus").onclick = () => (qty.value = Math.max(1, +qty.value - 1));
     prod.querySelector(".plus").onclick = () => (qty.value = +qty.value + 1);
-    // Ask the site's checkout function for a Stripe checkout page, then go there.
+    if (new URLSearchParams(location.search).get("payment") === "failed") {
+      note.textContent = "Your payment didn't go through, so nothing was charged. Please try again.";
+    }
+    // Ask the site's checkout function for a PayPal payment page, then go there.
     const add = prod.querySelector(".add");
     add.onclick = async () => {
       if (!sel.value) { note.textContent = "Please select Material."; return; }

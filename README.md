@@ -1,41 +1,48 @@
 # Bill Lin Photography — 自管網站
 
-從 Squarespace 原站搬過來的網站。頁面是純 HTML / CSS / JavaScript，商店的結帳和自動下單則由 Cloudflare Pages Functions 處理。照片都放在 `images/` 裡。
+從 Squarespace 原站搬過來的網站。頁面是純 HTML / CSS / JavaScript，商店的 PayPal 結帳和 Prodigi 自動下單由 Cloudflare Pages Functions 處理。照片都放在 `images/` 裡。
 
 ## 上線
 
 放在 **Cloudflare Pages**，連到這個 GitHub 儲存庫，main 分支一有更新，網站就會自動重新部署。
 （商店功能必須在 Cloudflare Pages 上才能運作；直接雙擊 `index.html` 只能看版面，按「Add To Cart」會顯示「Online ordering is coming soon.」）
 
-## 商店：Stripe 收款 + Prodigi 自動印刷出貨
+## 商店：PayPal 收款 + Prodigi 自動印刷出貨
 
-流程：客人選規格 → Stripe 結帳頁付款、填地址 → Stripe 通知網站 → 網站自動向 Prodigi 下單 → Prodigi 印刷並直接寄給客人。
+流程：客人選規格 → 跳到 PayPal 付款（可用 PayPal 帳號或直接刷卡）→ 回到網站看到「訂單完成」→ PayPal 通知網站 → 網站自動向 Prodigi 下單 → Prodigi 印刷並直接寄給客人。
 
 ### 一次性設定
 
-1. **Prodigi**：註冊帳號，在後台 Settings 取得 API 金鑰。先用測試用的 `sandbox_` 金鑰，測試沒問題再換成正式的 `live_` 金鑰，並在 Prodigi 綁定付款卡（Prodigi 會從這張卡扣印刷費和運費）。
-2. **確認商品編號（SKU）**：在 Prodigi 的產品目錄找到要賣的品項和尺寸，把 SKU 填進 `functions/_lib/catalog.js`。目前填的 `GLOBAL-CAN-16X24`（畫布）和 `GLOBAL-CFPM-16X24`（裱框）是暫定的，上線前一定要核對。
-3. **原檔**：在 Cloudflare 後台建立 R2 儲存空間，名稱 `print-files`，上傳每張要賣的照片的原始高解析檔（例如 `transient-serenity.jpg`）。這些檔案不會公開，只有 Prodigi 拿得到。
-4. **Stripe**：註冊帳號，在 Developers → API keys 取得 Secret key。到 Developers → Webhooks 新增一個端點，網址填 `https://你的網域/api/stripe-webhook`，事件勾選 `checkout.session.completed` 和 `checkout.session.async_payment_succeeded`，建立後複製 Signing secret。
+1. **PayPal**：申請 PayPal 商業帳戶（Business）。到 [developer.paypal.com](https://developer.paypal.com) 登入 → Apps & Credentials，先在 **Sandbox** 建立一個 App，取得 Client ID 和 Secret。
+   在同一個 App 裡新增 Webhook：網址填 `https://你的網域/api/paypal-webhook`，事件勾 `Payment capture completed`，建立後記下 Webhook ID。
+   測試完成後，切到 **Live** 重做一次，換成正式的 Client ID、Secret 和 Webhook ID。
+2. **Prodigi**：註冊帳號，在後台 Settings 取得 API 金鑰。先用 `sandbox_` 開頭的測試金鑰，確定沒問題再換成 `live_`，並綁定付款卡（印刷費和運費會從這張卡扣）。建議在 Prodigi 設定訂單「暫停期」（例如 2 小時），讓客人有時間取消。
+3. **確認商品編號（SKU）**：在 Prodigi 產品目錄找到要賣的品項和尺寸，填進 `functions/_lib/catalog.js`。目前的 `GLOBAL-CAN-16X24`（畫布）和 `GLOBAL-CFPM-16X24`（裱框）是暫定值，上線前一定要核對。
+4. **原檔**：在 Cloudflare 後台建立 R2 儲存空間，名稱 `print-files`，上傳要賣的照片原始高解析檔（例如 `transient-serenity.jpg`）。這些檔案不公開，只有 Prodigi 拿得到。網站也會在這裡的 `orders/` 資料夾記錄已送出的訂單，避免重複下單。
 5. **Cloudflare Pages 設定**（專案 → Settings）：
    - Environment variables（全部用加密的 Secret 類型）：
-     - `STRIPE_SECRET_KEY` — Stripe 的 Secret key
-     - `STRIPE_WEBHOOK_SECRET` — Stripe webhook 的 Signing secret
+     - `PAYPAL_CLIENT_ID`、`PAYPAL_CLIENT_SECRET` — PayPal App 的 Client ID 和 Secret
+     - `PAYPAL_WEBHOOK_ID` — PayPal Webhook ID
+     - `PAYPAL_ENV` — 測試時填 `sandbox`，正式開賣填 `live`
      - `PRODIGI_API_KEY` — Prodigi 金鑰（`sandbox_...` 或 `live_...`）
      - `PRINT_FILE_TOKEN` — 自己取一串夠長的隨機英數字，用來保護原檔
      - `SITE_URL` — 網站網址，例如 `https://billlinphoto.com`
    - Bindings：新增 R2 bucket，Variable name 填 `PRINT_FILES`，選 `print-files`。
    - 改完後重新部署一次。
 
-金鑰只填在 Stripe、Prodigi 和 Cloudflare 的後台，不要寫進程式碼，也不要貼到對話裡。
+金鑰只填在 PayPal、Prodigi 和 Cloudflare 的後台，不要寫進程式碼，也不要貼到對話裡。
 
 ### 測試
 
-用 Stripe 的測試金鑰（`sk_test_...`）和 Prodigi 的 `sandbox_` 金鑰，在網站上下一筆單，用 Stripe 的測試卡 `4242 4242 4242 4242` 付款。之後可以在 Prodigi 測試後台看到這筆訂單。測試金鑰不會真的扣款，也不會真的印刷。
+`PAYPAL_ENV` 設成 `sandbox`、Prodigi 用 `sandbox_` 金鑰。PayPal 開發者後台的 Sandbox → Accounts 會有一個測試用的買家帳號，用它在網站上下單付款，之後可以在 Prodigi 的測試後台看到這筆訂單。測試模式不會真的扣款，也不會真的印刷。
 
-### 價格、運費、可寄送國家
+### 退款
 
-都在 `functions/_lib/catalog.js`：價格單位是美分（`10000` = $100.00）；`SHIPPING` 是向客人收的運費（目前免運）；`SHIP_TO` 是可寄送的國家。
+在 PayPal 後台找到那筆交易，按「退款」即可。PayPal 退款不會自動取消 Prodigi 的訂單，兩邊要分開處理。
+
+### 價格、運費
+
+都在 `functions/_lib/catalog.js`：價格單位是美分（`10000` = $100.00）；`SHIPPING` 是向客人收的運費（目前免運）。
 
 ## 常見修改
 
@@ -60,8 +67,8 @@ order-success.html       付款完成頁
 404.html                 找不到頁面
 css/style.css            全站樣式
 js/main.js               導覽列、頁尾、地圖、瀑布流、燈箱、商品頁
-functions/               伺服器端程式：結帳、Stripe 通知、Prodigi 下單、原檔
-functions/_lib/catalog.js  商品價格、Prodigi SKU、運費、寄送國家
-tests/shop.test.mjs      商店流程測試（模擬 Stripe 與 Prodigi）
+functions/               伺服器端程式：PayPal 結帳、付款通知、Prodigi 下單、原檔
+functions/_lib/catalog.js  商品價格、Prodigi SKU、運費
+tests/shop.test.mjs      商店流程測試（模擬 PayPal 與 Prodigi）
 images/                  照片（網頁版 2560px；sm/ 是縮圖；full/ 是點開放大用的高畫質版本）
 ```
