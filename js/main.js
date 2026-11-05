@@ -206,6 +206,14 @@
     window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(layoutCallouts, 150); });
   }
 
+  /* ---------- Shop grid: make sure every card knows its photo's shape (--ar), for the justified rows ---------- */
+  document.querySelectorAll(".product-card").forEach((c) => {
+    if (c.style.getPropertyValue("--ar")) return;
+    const img = c.querySelector("img"); if (!img) return;
+    const set = () => img.naturalWidth && c.style.setProperty("--ar", (img.naturalWidth / img.naturalHeight).toFixed(3));
+    img.complete ? set() : img.addEventListener("load", set, { once: true });
+  });
+
   /* ---------- Shop category filter ---------- */
   const cats = document.querySelector(".shop-cats");
   if (cats) {
