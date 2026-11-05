@@ -13,12 +13,26 @@
 <body data-page="blog">
 <main>
 
-<section class="gray blog-list">
-  <a class="blog-card" href="autumn-in-boston.html">
-    <img src="images/DSC05064.jpg" alt="Two children on a Beacon Hill street in autumn" srcset="images/sm/DSC05064.jpg 1200w, images/DSC05064.jpg 1707w" sizes="92vw" decoding="async">
-    <time datetime="2023-11-15">11/15/23</time>
-    <h1>Autumn In Boston</h1>
-  </a>
+<section class="gray blog-page">
+  <header class="blog-head">
+    <h1>Blog</h1>
+    <p>Stories and notes from the streets, written between photo walks.</p>
+  </header>
+
+  <!-- Newest post goes here as .post-card.featured; older posts move into .post-grid below. -->
+  <article class="post-card featured">
+    <a class="post-card-img" href="autumn-in-boston.html" tabindex="-1" aria-hidden="true">
+      <img src="images/DSC05064.jpg" alt="" srcset="images/sm/DSC05064.jpg 1200w, images/DSC05064.jpg 1707w" sizes="(max-width: 760px) 92vw, 44vw" decoding="async">
+    </a>
+    <div class="post-card-body">
+      <p class="post-card-meta"><time datetime="2023-11-15">Nov 15, 2023</time><span>Boston</span><span>4 min read</span></p>
+      <h2><a href="autumn-in-boston.html">Autumn In Boston</a></h2>
+      <p class="post-card-excerpt">It's 4 am. The sharp ring of my alarm slices through the silence of the early morning. I'm going to Boston today, and I'm taking the first train to Boston, because it's autumn, the most beautiful season in the city.</p>
+      <a class="post-card-more" href="autumn-in-boston.html">Read the story <span aria-hidden="true">→</span></a>
+    </div>
+  </article>
+
+  <div class="post-grid"></div>
 </section>
 
 </main>
