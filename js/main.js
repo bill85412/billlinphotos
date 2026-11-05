@@ -543,7 +543,7 @@
       priceEl.textContent = v ? money(v.price) : "";
       const sold = !v || !v.available;
       add.disabled = sold;
-      add.textContent = sold ? "Sold out" : "Add to cart";
+      add.textContent = sold ? "Sold Out" : "Add to Cart";
     };
     wrap.addEventListener("click", (e) => {
       const b = e.target.closest("[data-opt]"); if (!b) return;
