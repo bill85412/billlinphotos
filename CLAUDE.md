@@ -29,12 +29,12 @@ Bill Lin's street-photography site. Plain static HTML/CSS/JS, no build step. Hos
 - **New product:** see Shop below.
 
 ## Photos
-The owner wants the site as sharp as possible. He sends originals (often 30–50 MB, sometimes HEIC, often without filenames; photos pasted into chat arrive downscaled to ~2576 px, so ask for file attachments when a large version matters). Never commit originals (Cloudflare Pages rejects files over 25 MiB). Every photo gets up to three versions, all JPEG, EXIF orientation fixed, progressive:
+The owner wants the site as sharp as possible. He sends originals (often 30–50 MB, sometimes HEIC, often without filenames; photos pasted into chat arrive downscaled to ~2576 px, so ask for file attachments when a large version matters). Never commit originals (Cloudflare Pages rejects files over 25 MiB). Every photo gets two versions, all JPEG, EXIF orientation fixed, progressive:
 - `images/sm/NAME.jpg` — long edge 1200 px, quality 85
 - `images/NAME.jpg` — long edge up to 2560 px, quality 88, 4:4:4 chroma
-- `images/full/NAME.jpg` — long edge up to 4000 px, quality 95, 4:4:4; only when the source is larger than 2700 px
+The owner does not want visitors downloading his photos, so nothing larger than 2560 px is published (the old 4000 px `images/full/` tier was removed; print-resolution originals live only in Prodigi). `js/main.js` + `css/style.css` block right-click on photos, dragging images, and iOS/Android long-press save; keep this when adding new image types.
 Apply light unsharp mask (radius 0.6, 45%, threshold 2) only after a downscale below 75%.
-Every `<img src="images/NAME.jpg">` carries `srcset="images/sm/NAME.jpg 1200w, images/NAME.jpg <width>w"`, a `sizes` value matching its layout (see existing tags), `decoding="async"`, and `data-full="images/full/NAME.jpg"` when the full version exists — the lightbox loads `data-full`. CSS backgrounds use `images/NAME.jpg`.
+Every `<img src="images/NAME.jpg">` carries `srcset="images/sm/NAME.jpg 1200w, images/NAME.jpg <width>w"`, a `sizes` value matching its layout (see existing tags) and `decoding="async"`; the lightbox shows the same 2560 px image. CSS backgrounds use `images/NAME.jpg`.
 
 ## Shop (headless Shopify + Prodigi, modelled on skypathstudio.com)
 The owner chose skypathstudio.com as the model: the site keeps its own pages and cart drawer, the cart lives in Shopify, checkout is Shopify's, and Prodigi's Shopify app prints and ships every order. There is no server code (the old PayPal + Prodigi Cloudflare Functions were removed). The owner is in Taiwan: Shopify Payments, Shop Pay and Managed Markets/Global-e are not available to him, so his Shopify checkout takes payment through PayPal (and any other third-party gateway he adds); Shopify adds its third-party transaction fee.

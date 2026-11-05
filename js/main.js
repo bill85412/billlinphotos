@@ -122,6 +122,12 @@
     window.addEventListener("resize", () => { el._done = false; layoutMasonry(el); });
   });
 
+  /* ---------- Photo protection: no right-click "Save image", no dragging photos out, no long-press save ---------- */
+  // (This only stops casual saving; anything shown on screen can still be screenshotted.)
+  const isPhoto = (t) => t && t.closest && t.closest("img, .bg-section, .lightbox, .drawer-thumb, .product-card .ph");
+  document.addEventListener("contextmenu", (e) => { if (isPhoto(e.target)) e.preventDefault(); });
+  document.addEventListener("dragstart", (e) => { if (e.target.tagName === "IMG") e.preventDefault(); });
+
   /* ---------- Lightbox ("View fullsize") ---------- */
   const zoomables = [...document.querySelectorAll("figure.zoom")];
   if (zoomables.length) {
@@ -132,19 +138,11 @@
     document.body.append(lb);
     const lbImg = lb.querySelector("img");
     let group = [], idx = 0;
-    // Show the 2560px page image at once, then swap in the 4000px version when it has loaded.
-    let pending = 0;
+    // The lightbox shows the same 2560px page image (no larger file is published).
     const show = () => {
       const img = group[idx].querySelector("img");
-      const token = ++pending;
       lbImg.src = img.getAttribute("src");
       lbImg.alt = img.alt;
-      const full = img.dataset.full;
-      if (full) {
-        const hi = new Image();
-        hi.onload = () => { if (token === pending) lbImg.src = full; };
-        hi.src = full;
-      }
     };
     zoomables.forEach((f) => f.addEventListener("click", () => {
       const scope = f.closest("[data-group]") || document;
