@@ -18,7 +18,7 @@ Bill Lin's street-photography site. Plain static HTML/CSS/JS, no build step. Hos
 - `new-york.html` — New York masonry album (3 columns); the same photos also appear in the Gallery page's New York City section
 - `blog.html` — list of posts; `autumn-in-boston.html` — the one post
 - `cart.html` — cart page (same view as the cart drawer, rendered by `js/main.js`)
-- `shop.html` — product grid with category filter (`data-cats` on each card: prints / postcards / presets); product pages `boston-seaport-night.html` ("Seaport Nights", panorama; its shop card uses `.ph.wide` so the whole image shows) and `transient-serenity.html`
+- `shop.html` — product grid with category filter (every card is the same square off-white "wall", the print shown whole at its own shape with a soft shadow — works for portrait, landscape and panoramas alike; 4 columns desktop, 2 on tablet and phone) (`data-cats` on each card: prints / postcards / presets); product pages `boston-seaport-night.html` ("Seaport Nights", panorama) and `transient-serenity.html`
 - `404.html`
 - There is intentionally no contact page.
 
