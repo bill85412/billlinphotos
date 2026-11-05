@@ -46,6 +46,10 @@ h4 { font-size: clamp(17px, 1.7vw, 19px); line-height: 1.29; }
 .header-icons { justify-self: end; display: flex; gap: 22px; align-items: center; }
 .header-icons svg { width: 20px; height: 20px; display: block; }
 .header-icons .cart svg { width: 26px; }
+.header-icons .cart, .header-mobile .cart { position: relative; display: block; }
+.cart-count { position: absolute; top: -7px; right: -10px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: var(--sage); color: #000; font: 600 10px/17px var(--sans); text-align: center; }
+.header-mobile { display: none; }
+.header-mobile .cart svg { width: 26px; height: 20px; display: block; }
 .menu-toggle { display: none; background: none; border: 0; color: inherit; cursor: pointer; }
 .menu-toggle span { display: block; width: 26px; height: 1px; background: currentColor; margin: 7px 0; }
 
@@ -247,6 +251,34 @@ figure.zoom:hover img { opacity: .9; }
 .order-done { min-height: 70vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; text-align: center; padding: 140px var(--gutter) 100px; }
 .order-done p { font-family: var(--serif); font-size: 19px; line-height: 1.6; max-width: 46ch; }
 
+/* ---------- Cart ---------- */
+.form-note a { text-decoration: underline; text-underline-offset: 3px; }
+.cart-page { padding: 130px var(--gutter) 100px; }
+.cart-page h1 { max-width: 1000px; margin: 0 auto 40px; padding-bottom: 26px; border-bottom: 1px solid #111; font-size: clamp(44px, 6vw, 72px); line-height: 1; }
+.cart { max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 56px; align-items: start; }
+.cart-lines { list-style: none; display: grid; }
+.cart-line { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto 90px; gap: 20px; align-items: center; padding: 22px 0; border-bottom: 1px solid rgba(0,0,0,.2); }
+.cart-line:first-child { padding-top: 0; }
+.cart-thumb img { width: 96px; aspect-ratio: 4 / 5; object-fit: cover; }
+.cart-title { font-family: var(--serif); font-size: 22px; line-height: 1.2; }
+.cart-variant { font-size: 13px; margin-top: 4px; }
+.cart-remove { margin-top: 10px; background: none; border: 0; padding: 0; font: inherit; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; color: inherit; }
+.cart-qty { height: 42px; gap: 6px; }
+.cart-qty span { min-width: 22px; text-align: center; font-variant-numeric: tabular-nums; }
+.cart-price { text-align: right; font-family: var(--serif); font-size: 18px; font-variant-numeric: tabular-nums; }
+.cart-summary { background: #d4d4d4; padding: 26px; display: grid; gap: 12px; }
+.cart-summary p { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
+.cart-summary .cart-total { border-top: 1px solid #111; padding-top: 14px; margin-top: 4px; font-family: var(--serif); font-size: 22px; }
+.cart-summary .cart-checkout { margin-top: 10px; }
+.cart-summary .cart-note { display: block; font-size: 12px; min-height: 18px; }
+.cart-empty { grid-column: 1 / -1; display: grid; justify-items: start; gap: 22px; font-family: var(--serif); font-size: 20px; }
+@media (max-width: 760px) {
+  .cart { grid-template-columns: 1fr; gap: 34px; }
+  .cart-line { grid-template-columns: 72px minmax(0, 1fr) auto; grid-template-areas: "thumb desc price" "thumb qty qty"; row-gap: 12px; }
+  .cart-thumb { grid-area: thumb; align-self: start; } .cart-thumb img { width: 72px; }
+  .cart-desc { grid-area: desc; } .cart-price { grid-area: price; align-self: start; } .cart-qty { grid-area: qty; justify-self: start; }
+}
+
 /* ---------- Footer ---------- */
 .site-footer { background: var(--gray); text-align: center; padding: 22px var(--gutter); }
 
@@ -264,7 +296,8 @@ figure.zoom:hover img { opacity: .9; }
   :root { --gutter: 6vw; }
   .site-header { grid-template-columns: 1fr auto; }
   .site-nav, .header-icons { display: none; }
-  .menu-toggle { display: block; justify-self: end; }
+  .header-mobile { display: flex; align-items: center; gap: 22px; justify-self: end; }
+  .menu-toggle { display: block; }
   .about-intro .inner { grid-template-columns: 1fr; gap: 34px; padding: 90px var(--gutter); }
   .about-intro .text { grid-column: 1; padding-top: 0; }
   .about-intro .text .btn { margin-left: 0; }

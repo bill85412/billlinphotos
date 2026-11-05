@@ -42,30 +42,39 @@ globalThis.fetch = async (url, init = {}) => {
 };
 const post = (url, body, headers = {}) => new Request(url, { method: "POST", body: typeof body === "string" ? body : JSON.stringify(body), headers });
 
-// ---- checkout ----
-let r = await checkout({ request: post("https://billlinphoto.com/api/checkout", { slug: "transient-serenity", variant: "Canvas Print", quantity: 2 }), env });
+// ---- checkout (whole cart) ----
+let r = await checkout({ request: post("https://billlinphoto.com/api/checkout", { items: [
+  { slug: "transient-serenity", variant: "Canvas Print", quantity: 2 },
+  { slug: "transient-serenity", variant: "Framed Print", quantity: 1 },
+  { slug: "transient-serenity", variant: "Canvas Print", quantity: 1 },
+] }), env });
 assert.equal(r.status, 200);
 assert.equal((await r.json()).url, "https://www.sandbox.paypal.com/checkoutnow?token=ORD1");
 const created = JSON.parse(calls.find((c) => c.url === `${SB}/v2/checkout/orders`).body);
 const pu = created.purchase_units[0];
 assert.equal(created.intent, "CAPTURE");
-assert.equal(pu.amount.value, "200.00");
-assert.equal(pu.amount.breakdown.item_total.value, "200.00");
+assert.equal(pu.items.length, 2, "repeated lines are merged");
+assert.equal(pu.items[0].sku, "transient-serenity|Canvas Print");
+assert.equal(pu.items[0].quantity, "3");
 assert.equal(pu.items[0].unit_amount.value, "100.00");
-assert.equal(pu.items[0].quantity, "2");
-assert.deepEqual(JSON.parse(pu.custom_id), { s: "transient-serenity", v: "Canvas Print", q: 2 });
+assert.equal(pu.items[1].sku, "transient-serenity|Framed Print");
+assert.equal(pu.items[1].unit_amount.value, "80.00");
+assert.equal(pu.amount.breakdown.item_total.value, "380.00");
+assert.equal(pu.amount.value, "380.00");
 assert.equal(created.payment_source.paypal.experience_context.return_url, "https://billlinphoto.com/api/paypal-return");
-assert.equal(created.payment_source.paypal.experience_context.cancel_url, "https://billlinphoto.com/transient-serenity.html");
+assert.equal(created.payment_source.paypal.experience_context.cancel_url, "https://billlinphoto.com/cart.html");
 assert.equal(created.payment_source.paypal.experience_context.shipping_preference, "GET_FROM_FILE");
-console.log("✓ checkout builds the PayPal order from server-side prices");
+console.log("✓ checkout turns the whole cart into one PayPal order, priced from the server catalog");
 
-r = await checkout({ request: post("https://x/api/checkout", { slug: "transient-serenity", variant: "Gold Print" }), env });
+r = await checkout({ request: post("https://x/api/checkout", { items: [{ slug: "transient-serenity", variant: "Gold Print", quantity: 1 }] }), env });
 assert.equal(r.status, 404);
-r = await checkout({ request: post("https://x/api/checkout", { slug: "transient-serenity", variant: "Canvas Print", quantity: 50 }), env });
+r = await checkout({ request: post("https://x/api/checkout", { items: [{ slug: "transient-serenity", variant: "Canvas Print", quantity: 50 }] }), env });
 assert.equal(r.status, 400);
-r = await checkout({ request: post("https://x/api/checkout", { slug: "transient-serenity", variant: "Canvas Print" }), env: {} });
+r = await checkout({ request: post("https://x/api/checkout", { items: [] }), env });
+assert.equal(r.status, 400);
+r = await checkout({ request: post("https://x/api/checkout", { items: [{ slug: "transient-serenity", variant: "Canvas Print", quantity: 1 }] }), env: {} });
 assert.equal(r.status, 503);
-console.log("✓ checkout rejects unknown options, silly quantities, and missing PayPal keys");
+console.log("✓ checkout rejects unknown options, silly quantities, empty carts, and missing PayPal keys");
 
 // ---- return from PayPal ----
 captureReply = [{ id: "ORD1", status: "COMPLETED" }, 201];
@@ -76,18 +85,20 @@ captureReply = [{ name: "UNPROCESSABLE_ENTITY", details: [{ issue: "ORDER_ALREAD
 r = await paypalReturn({ request: new Request("https://billlinphoto.com/api/paypal-return?token=ORD1"), env });
 assert.equal(r.headers.get("Location"), "https://billlinphoto.com/order-success.html");
 captureReply = [{ name: "UNPROCESSABLE_ENTITY", details: [{ issue: "INSTRUMENT_DECLINED" }] }, 422];
-paypalOrder = { id: "ORD1", status: "APPROVED", purchase_units: [{ reference_id: "transient-serenity" }] };
 r = await paypalReturn({ request: new Request("https://billlinphoto.com/api/paypal-return?token=ORD1"), env });
-assert.equal(r.headers.get("Location"), "https://billlinphoto.com/transient-serenity.html?payment=failed");
-console.log("✓ returning from PayPal captures the payment; a declined card goes back to the product page");
+assert.equal(r.headers.get("Location"), "https://billlinphoto.com/cart.html?payment=failed");
+console.log("✓ returning from PayPal captures the payment; a declined card goes back to the cart");
 
 // ---- webhook → Prodigi ----
 paypalOrder = {
   id: "ORD1", status: "COMPLETED",
   payer: { email_address: "buyer@example.com", name: { given_name: "Ann", surname: "Buyer" } },
   purchase_units: [{
-    reference_id: "transient-serenity",
-    custom_id: JSON.stringify({ s: "transient-serenity", v: "Framed Print", q: 1 }),
+    reference_id: "cart",
+    items: [
+      { name: "Transient Serenity — Framed Print", sku: "transient-serenity|Framed Print", quantity: "1" },
+      { name: "Transient Serenity — Canvas Print", sku: "transient-serenity|Canvas Print", quantity: "2" },
+    ],
     shipping: { name: { full_name: "Ann Buyer" }, address: { address_line_1: "1 Main St", admin_area_2: "Boston", admin_area_1: "MA", postal_code: "02116", country_code: "US" } },
   }],
 };
@@ -105,13 +116,17 @@ assert.equal(prodigiCall.headers["X-API-Key"], "sandbox_abc");
 const order = JSON.parse(prodigiCall.body);
 assert.equal(order.submit, true);
 assert.equal(order.merchantReference, "ORD1");
+assert.equal(order.items.length, 2);
 assert.equal(order.items[0].sku, "GLOBAL-CFPM-16X24");
+assert.equal(order.items[0].quantity, 1);
+assert.equal(order.items[1].sku, "GLOBAL-CAN-16X24");
+assert.equal(order.items[1].quantity, 2);
 assert.equal(order.items[0].assets[0].url, "https://billlinphoto.com/api/print-file/transient-serenity.jpg?token=tok123");
 assert.equal(order.recipient.name, "Ann Buyer");
 assert.equal(order.recipient.address.townOrCity, "Boston");
 assert.equal(order.recipient.address.countryCode, "US");
 assert.ok(bucket.store.has("orders/ORD1.json"));
-console.log("✓ a captured PayPal payment becomes a Prodigi order with the right SKU, address and print file");
+console.log("✓ a captured PayPal payment becomes one Prodigi order with every cart item, the address and print files");
 
 calls = [];
 r = await webhook({ request: post("https://billlinphoto.com/api/paypal-webhook", event, ppHeaders), env });

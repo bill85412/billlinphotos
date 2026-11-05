@@ -15,6 +15,7 @@ Bill Lin's street-photography site. Plain static HTML/CSS/JS, no build step. Hos
 - `boston.html` — Boston masonry album (4 columns)
 - `new-york.html` — New York masonry album (3 columns); the same photos also appear in the Gallery page's New York City section
 - `blog.html` — list of posts; `autumn-in-boston.html` — the one post
+- `cart.html` — shopping cart (rendered by `js/main.js`)
 - `shop.html` — product grid with category filter (`data-cats` on each card: prints / postcards / presets); `transient-serenity.html` — product page
 - `404.html`
 - There is intentionally no contact page.
@@ -35,9 +36,10 @@ Every `<img src="images/NAME.jpg">` carries `srcset="images/sm/NAME.jpg 1200w, i
 
 ## Shop (PayPal + Prodigi, Cloudflare Pages Functions)
 The owner is in Taiwan, where Stripe is not available, so payments go through PayPal.
-- `functions/api/checkout.js` — POST `{slug, variant, quantity}` → creates a PayPal Orders v2 order (intent CAPTURE, prices from `functions/_lib/catalog.js`, never from the browser; `custom_id` = JSON `{s,v,q}`; `shipping_preference: GET_FROM_FILE`) → returns `{url}` (the `payer-action` link). Product page JS (`js/main.js`) redirects there; if the function is missing or not configured it shows "Online ordering is coming soon."
-- `functions/api/paypal-return.js` — PayPal's return URL. Captures the order (`ORDER_ALREADY_CAPTURED` counts as success) → `order-success.html`; a failed capture → product page `?payment=failed`.
-- `functions/api/paypal-webhook.js` — `PAYMENT.CAPTURE.COMPLETED` → verifies via PayPal's verify-webhook-signature API → re-reads the order from PayPal → creates the Prodigi order (v5 API, `https://api.prodigi.com/v5/orders`; key prefix `sandbox_`/`live_` picks the environment) → writes marker `orders/<paypalOrderId>.json` in the R2 bucket, which is the duplicate guard. Errors return 500 so PayPal retries.
+- Cart: `js/main.js` keeps the cart in localStorage (`billlin-cart`: slug, title, variant, display price, image, url, quantity; max 10 per line). "Add To Cart" on a product page adds to it; the header cart icon (desktop and mobile) shows the count and links to `cart.html`, which renders lines, quantity +/−, remove, subtotal/shipping/total and "Check out with PayPal". `cart.html`'s `data-shipping`/`data-shipping-label` must match `SHIPPING` in the catalog; the product page's `data-price` options must match catalog prices (the server price is what is charged). `order-success.html` empties the cart.
+- `functions/api/checkout.js` — POST `{items: [{slug, variant, quantity}]}` → merges repeated lines, checks each against `functions/_lib/catalog.js` (prices never come from the browser) → one PayPal Orders v2 order (intent CAPTURE; each line item's `sku` = `slug|variant`; `shipping_preference: GET_FROM_FILE`; cancel → `cart.html`) → returns `{url}` (the `payer-action` link). If checkout is not set up, the cart page shows "Online ordering is coming soon."
+- `functions/api/paypal-return.js` — PayPal's return URL. Captures the order (`ORDER_ALREADY_CAPTURED` counts as success) → `order-success.html`; a failed capture → `cart.html?payment=failed`.
+- `functions/api/paypal-webhook.js` — `PAYMENT.CAPTURE.COMPLETED` → verifies via PayPal's verify-webhook-signature API → re-reads the order from PayPal → turns every line item (`sku` = `slug|variant`) into one Prodigi order (v5 API, `https://api.prodigi.com/v5/orders`; key prefix `sandbox_`/`live_` picks the environment) → writes marker `orders/<paypalOrderId>.json` in the R2 bucket, which is the duplicate guard. Errors return 500 so PayPal retries.
 - `functions/api/print-file/[name].js` — serves print files from the private R2 bucket bound as `PRINT_FILES`, only with `?token=PRINT_FILE_TOKEN`.
 - `functions/_lib/paypal.js` — OAuth token, REST calls, webhook verification. `PAYPAL_ENV=live` → api-m.paypal.com, otherwise sandbox.
 - Cloudflare Pages environment variables: `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`, `PAYPAL_ENV`, `PRODIGI_API_KEY`, `PRINT_FILE_TOKEN`, `SITE_URL`; R2 binding `PRINT_FILES`. Never ask the owner to paste these keys into chat.

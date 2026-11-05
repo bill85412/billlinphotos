@@ -2,6 +2,29 @@
   const page = document.body.dataset.page || "";
   const cfg = window.SITE_CONFIG || {};
 
+  /* ---------- Cart (kept in this browser; prices are re-checked on the server at checkout) ---------- */
+  const CART_KEY = "billlin-cart";
+  const MAX_QTY = 10;
+  const Cart = {
+    read() { try { return JSON.parse(localStorage.getItem(CART_KEY)) || []; } catch (e) { return []; } },
+    write(items) { try { localStorage.setItem(CART_KEY, JSON.stringify(items)); } catch (e) {} updateCartBadge(); },
+    count() { return this.read().reduce((n, i) => n + i.quantity, 0); },
+    add(item) {
+      const items = this.read();
+      const same = items.find((i) => i.slug === item.slug && i.variant === item.variant);
+      if (same) same.quantity = Math.min(MAX_QTY, same.quantity + item.quantity);
+      else items.push({ ...item, quantity: Math.min(MAX_QTY, item.quantity) });
+      this.write(items);
+    },
+    clear() { this.write([]); },
+  };
+  const money = (n) => `$${(+n).toFixed(2)}`;
+  function updateCartBadge() {
+    const n = Cart.count();
+    document.querySelectorAll(".cart-count").forEach((el) => { el.textContent = n; el.hidden = !n; });
+  }
+  window.addEventListener("storage", (e) => { if (e.key === CART_KEY) updateCartBadge(); });
+
   /* ---------- Header & footer (shared across pages) ---------- */
   const nav = [
     ["about.html", "About", "about"],
@@ -24,10 +47,14 @@
     <div class="header-icons">
       <a href="${IG_URL}" target="_blank" rel="noopener" aria-label="Instagram">${ig}</a>
       <a href="${YT_URL}" target="_blank" rel="noopener" aria-label="YouTube">${yt}</a>
-      <a class="cart" href="shop.html" aria-label="Shop">${cart}</a>
+      <a class="cart" href="cart.html" aria-label="Cart">${cart}<span class="cart-count" hidden></span></a>
     </div>
-    <button class="menu-toggle" aria-label="Open menu"><span></span><span></span></button>`;
+    <div class="header-mobile">
+      <a class="cart" href="cart.html" aria-label="Cart">${cart}<span class="cart-count" hidden></span></a>
+      <button class="menu-toggle" aria-label="Open menu"><span></span><span></span></button>
+    </div>`;
   document.body.prepend(header);
+  updateCartBadge();
 
   const mm = document.createElement("div");
   mm.className = "mobile-menu";
@@ -208,30 +235,96 @@
     };
     prod.querySelector(".minus").onclick = () => (qty.value = Math.max(1, +qty.value - 1));
     prod.querySelector(".plus").onclick = () => (qty.value = +qty.value + 1);
-    if (new URLSearchParams(location.search).get("payment") === "failed") {
-      note.textContent = "Your payment didn't go through, so nothing was charged. Please try again.";
-    }
-    // Ask the site's checkout function for a PayPal payment page, then go there.
-    const add = prod.querySelector(".add");
-    add.onclick = async () => {
+    // Add the chosen option to the cart; checkout happens on the cart page.
+    const photo = document.querySelector(".product-layout figure img");
+    prod.querySelector(".add").onclick = () => {
       if (!sel.value) { note.textContent = "Please select Material."; return; }
-      const label = add.textContent;
-      add.disabled = true; add.textContent = "Loading…"; note.textContent = "";
+      const o = sel.selectedOptions[0];
+      Cart.add({
+        slug: prod.dataset.slug,
+        title: prod.dataset.title,
+        variant: sel.value,
+        price: +o.dataset.price,
+        image: photo ? photo.getAttribute("src").replace(/^images\//, "images/sm/") : "",
+        url: location.pathname.split("/").pop() || `${prod.dataset.slug}.html`,
+        quantity: Math.max(1, Math.floor(+qty.value || 1)),
+      });
+      note.innerHTML = `Added to cart · <a href="cart.html">View cart (${Cart.count()})</a>`;
+      qty.value = 1;
+    };
+  }
+
+  /* ---------- Cart page ---------- */
+  const cartEl = document.querySelector("#cart");
+  if (cartEl) {
+    const shipping = +(cartEl.dataset.shipping || 0);
+    const shippingLabel = cartEl.dataset.shippingLabel || money(shipping);
+    const failed = new URLSearchParams(location.search).get("payment") === "failed";
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+    const render = (message = failed ? "Your payment didn't go through, so nothing was charged. Please try again." : "") => {
+      const items = Cart.read();
+      if (!items.length) {
+        cartEl.innerHTML = `<div class="cart-empty"><p>Your cart is empty.</p><a class="btn" href="shop.html">Back to the shop</a></div>`;
+        return;
+      }
+      const subtotal = items.reduce((n, i) => n + i.price * i.quantity, 0);
+      cartEl.innerHTML = `
+        <ul class="cart-lines">
+          ${items.map((i, k) => `
+            <li class="cart-line" data-k="${k}">
+              <a class="cart-thumb" href="${esc(i.url)}">${i.image ? `<img src="${esc(i.image)}" alt="">` : ""}</a>
+              <div class="cart-desc">
+                <a class="cart-title" href="${esc(i.url)}">${esc(i.title)}</a>
+                <p class="cart-variant">${esc(i.variant)}</p>
+                <button class="cart-remove" type="button">Remove</button>
+              </div>
+              <div class="qty cart-qty"><button class="minus" type="button" aria-label="Decrease">−</button><span>${i.quantity}</span><button class="plus" type="button" aria-label="Increase">+</button></div>
+              <p class="cart-price">${money(i.price * i.quantity)}</p>
+            </li>`).join("")}
+        </ul>
+        <div class="cart-summary">
+          <p><span>Subtotal</span><span>${money(subtotal)}</span></p>
+          <p><span>Shipping</span><span>${esc(shippingLabel)}</span></p>
+          <p class="cart-total"><span>Total</span><span>${money(subtotal + shipping)}</span></p>
+          <button class="btn btn-black cart-checkout" type="button">Check out with PayPal</button>
+          <p class="cart-note" role="status">${esc(message)}</p>
+        </div>`;
+    };
+
+    cartEl.addEventListener("click", async (e) => {
+      const line = e.target.closest(".cart-line");
+      if (line) {
+        const items = Cart.read(), it = items[+line.dataset.k];
+        if (!it) return;
+        if (e.target.closest(".plus")) it.quantity = Math.min(MAX_QTY, it.quantity + 1);
+        else if (e.target.closest(".minus")) it.quantity = Math.max(1, it.quantity - 1);
+        else if (e.target.closest(".cart-remove")) items.splice(+line.dataset.k, 1);
+        else return;
+        Cart.write(items); render(""); return;
+      }
+      const btn = e.target.closest(".cart-checkout");
+      if (!btn) return;
+      const note = cartEl.querySelector(".cart-note");
+      btn.disabled = true; btn.textContent = "Loading…"; note.textContent = "";
       try {
         const r = await fetch("/api/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ slug: prod.dataset.slug, variant: sel.value, quantity: +qty.value || 1 }),
+          body: JSON.stringify({ items: Cart.read().map(({ slug, variant, quantity }) => ({ slug, variant, quantity })) }),
         });
         const data = await r.json().catch(() => ({}));
         if (r.ok && data.url) { location.href = data.url; return; }
-        note.textContent = r.status === 404 || r.status === 503 || r.status === 405
-          ? "Online ordering is coming soon."
-          : data.error || "Checkout is unavailable right now. Please try again in a moment.";
-      } catch (e) {
+        // No checkout function here yet (preview, or keys not set up): say so plainly.
+        note.textContent = r.status === 503 || !data.error ? "Online ordering is coming soon." : data.error;
+      } catch (err) {
         note.textContent = "Online ordering is coming soon.";
       }
-      add.disabled = false; add.textContent = label;
-    };
+      btn.disabled = false; btn.textContent = "Check out with PayPal";
+    });
+    render();
   }
+
+  /* ---------- Order confirmed: empty the cart ---------- */
+  if (document.querySelector(".order-done")) Cart.clear();
 })();

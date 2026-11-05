@@ -39,10 +39,14 @@ export async function fulfil(env, orderId, origin) {
   if (order.status !== "COMPLETED") return `Order ${orderId} is ${order.status}, not paid yet`;
 
   const unit = order.purchase_units?.[0] || {};
-  let meta = {};
-  try { meta = JSON.parse(unit.custom_id || "{}"); } catch {}
-  const found = findVariant(meta.s, meta.v);
-  if (!found) throw new Error(`Unknown product in paid PayPal order ${orderId}: ${unit.custom_id}`);
+  // Each PayPal line item's sku is "slug|variant" (set by /api/checkout).
+  const lines = (unit.items || []).map((it) => {
+    const [slug, variant] = String(it.sku || "").split("|");
+    return { slug, variant, quantity: Number(it.quantity) || 1, found: findVariant(slug, variant) };
+  });
+  if (!lines.length) throw new Error(`No items on paid PayPal order ${orderId}`);
+  const unknown = lines.find((l) => !l.found);
+  if (unknown) throw new Error(`Unknown product in paid PayPal order ${orderId}: ${unknown.slug} / ${unknown.variant}`);
 
   const ship = unit.shipping;
   const a = ship?.address;
@@ -65,13 +69,13 @@ export async function fulfil(env, orderId, origin) {
         stateOrCounty: a.admin_area_1 || undefined,
       },
     },
-    items: [{
-      merchantReference: `${meta.s}:${meta.v}`,
-      sku: found.variant.sku,
-      quantity: Number(meta.q) || 1,
+    items: lines.map((l) => ({
+      merchantReference: `${l.slug}:${l.variant}`,
+      sku: l.found.variant.sku,
+      quantity: l.quantity,
       sizing: "fillPrintArea",
-      assets: [{ printArea: "default", url: printFileUrl(env, found.product.printFile, origin) }],
-    }],
+      assets: [{ printArea: "default", url: printFileUrl(env, l.found.product.printFile, origin) }],
+    })),
   };
 
   const { id } = await createProdigiOrder(env, prodigiOrder);

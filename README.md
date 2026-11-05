@@ -9,7 +9,7 @@
 
 ## 商店：PayPal 收款 + Prodigi 自動印刷出貨
 
-流程：客人選規格 → 跳到 PayPal 付款（可用 PayPal 帳號或直接刷卡）→ 回到網站看到「訂單完成」→ PayPal 通知網站 → 網站自動向 Prodigi 下單 → Prodigi 印刷並直接寄給客人。
+流程：客人選規格加入購物車 → 在購物車頁按「Check out with PayPal」→ 跳到 PayPal 付款（可用 PayPal 帳號或直接刷卡）→ 回到網站看到「訂單完成」→ PayPal 通知網站 → 網站自動向 Prodigi 下單 → Prodigi 印刷並直接寄給客人。
 
 ### 一次性設定
 
@@ -42,7 +42,7 @@
 
 ### 價格、運費
 
-都在 `functions/_lib/catalog.js`：價格單位是美分（`10000` = $100.00）；`SHIPPING` 是向客人收的運費（目前免運）。
+都在 `functions/_lib/catalog.js`：價格單位是美分（`10000` = $100.00）；`SHIPPING` 是向客人收的運費（目前免運）。改價格或運費時，商品頁選項的 `data-price` 和 `cart.html` 的 `data-shipping` 也要一起改，購物車才會顯示正確的金額（實際收費以伺服器端為準）。
 
 ## 常見修改
 
@@ -63,6 +63,7 @@ blog.html                Blog 列表
 autumn-in-boston.html    文章
 shop.html                商店
 transient-serenity.html  商品頁
+cart.html                購物車
 order-success.html       付款完成頁
 404.html                 找不到頁面
 css/style.css            全站樣式
