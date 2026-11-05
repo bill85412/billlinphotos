@@ -288,6 +288,7 @@
     const pick = (t) => {
       thumbs.forEach((x) => { x.classList.toggle("active", x === t); x.toggleAttribute("aria-current", x === t); });
       main.srcset = t.dataset.srcset; main.src = t.dataset.src; main.alt = t.querySelector("img").alt;
+      main.closest(".pg-main").classList.toggle("is-room", t !== thumbs[0]);
     };
     thumbs.forEach((t) => t.addEventListener("click", () => pick(t)));
     // swipe the main picture on touch screens
@@ -306,7 +307,12 @@
   const prodFig = document.querySelector(".product-layout .pg-main img, .product-layout figure img");
   if (prodFig) {
     // decided once, from the print itself (room views are all 3:2 and must not flip the layout)
-    const shape = () => prodFig.naturalWidth && prodFig.closest(".product-layout").classList.toggle("wide", prodFig.naturalWidth / prodFig.naturalHeight >= 1.25);
+    const shape = () => {
+      if (!prodFig.naturalWidth) return;
+      const ar = prodFig.naturalWidth / prodFig.naturalHeight;
+      prodFig.closest(".product-layout").classList.toggle("wide", ar >= 1.25);
+      const g = prodFig.closest(".product-gallery"); if (g) g.style.setProperty("--stage", ar.toFixed(3));
+    };
     if (prodFig.complete) shape(); else prodFig.addEventListener("load", shape, { once: true });
   }
 
