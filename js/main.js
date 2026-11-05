@@ -401,7 +401,7 @@
     const lines = (cart && cart.lines && cart.lines.nodes) || [];
     if (!lines.length) {
       if (loading) return { body: `<div class="drawer-empty"><span class="spinner"></span></div>`, foot: "" };
-      return { body: `<div class="drawer-empty">${cartIcon}<p>Your cart is empty</p><a href="shop.html">Continue shopping →</a></div>`, foot: "" };
+      return { body: `<div class="drawer-empty">${cartIcon}<p>Your cart is empty</p><a href="shop.html">Continue Shopping →</a></div>`, foot: "" };
     }
     const body = `${bundleHTML(cart.totalQuantity, true)}<ul>${lines.map((l) => {
       const v = l.merchandise || {}, p = v.product || {};
@@ -467,8 +467,8 @@
     drawer.hidden = true;
     drawer.innerHTML = `
       <div class="drawer-backdrop"></div>
-      <aside class="drawer-panel" role="dialog" aria-modal="true" aria-label="Your cart">
-        <div class="drawer-head"><h2>Your cart</h2><button class="drawer-close" type="button" aria-label="Close cart">${icons.x}</button></div>
+      <aside class="drawer-panel" role="dialog" aria-modal="true" aria-label="Your Cart">
+        <div class="drawer-head"><h2>Your Cart</h2><button class="drawer-close" type="button" aria-label="Close cart">${icons.x}</button></div>
         <div class="drawer-body"></div>
         <div class="drawer-foot"></div>
       </aside>`;
