@@ -98,7 +98,20 @@
     document.body.append(lb);
     const lbImg = lb.querySelector("img");
     let group = [], idx = 0;
-    const show = () => { lbImg.src = group[idx].querySelector("img").src; lbImg.alt = group[idx].querySelector("img").alt; };
+    // Show the 2560px page image at once, then swap in the 4000px version when it has loaded.
+    let pending = 0;
+    const show = () => {
+      const img = group[idx].querySelector("img");
+      const token = ++pending;
+      lbImg.src = img.getAttribute("src");
+      lbImg.alt = img.alt;
+      const full = img.dataset.full;
+      if (full) {
+        const hi = new Image();
+        hi.onload = () => { if (token === pending) lbImg.src = full; };
+        hi.src = full;
+      }
+    };
     zoomables.forEach((f) => f.addEventListener("click", () => {
       const scope = f.closest("[data-group]") || document;
       group = [...scope.querySelectorAll("figure.zoom")];

@@ -25,7 +25,12 @@ Bill Lin's street-photography site. Plain static HTML/CSS/JS, no build step. Hos
 - **New product:** copy `transient-serenity.html` (update `data-slug`, `data-title`, options with `data-price`), add a `.product-card` to `shop.html`, add the slug to `stripeLinks`.
 
 ## Photos
-The owner sends full-size originals (often 30–50 MB, sometimes HEIC, often without filenames). Before committing: convert to JPEG, fix EXIF orientation, resize so the long edge is 2000 px, quality ~82, progressive. Keep each file under ~1 MB. Never commit originals.
+The owner wants the site as sharp as possible. He sends originals (often 30–50 MB, sometimes HEIC, often without filenames; photos pasted into chat arrive downscaled to ~2576 px, so ask for file attachments when a large version matters). Never commit originals (Cloudflare Pages rejects files over 25 MiB). Every photo gets up to three versions, all JPEG, EXIF orientation fixed, progressive:
+- `images/sm/NAME.jpg` — long edge 1200 px, quality 85
+- `images/NAME.jpg` — long edge up to 2560 px, quality 88, 4:4:4 chroma
+- `images/full/NAME.jpg` — long edge up to 4000 px, quality 95, 4:4:4; only when the source is larger than 2700 px
+Apply light unsharp mask (radius 0.6, 45%, threshold 2) only after a downscale below 75%.
+Every `<img src="images/NAME.jpg">` carries `srcset="images/sm/NAME.jpg 1200w, images/NAME.jpg <width>w"`, a `sizes` value matching its layout (see existing tags), `decoding="async"`, and `data-full="images/full/NAME.jpg"` when the full version exists — the lightbox loads `data-full`. CSS backgrounds use `images/NAME.jpg`.
 
 ## Commits
 Commit straight to `main` with a short message describing the change; the site redeploys in about a minute.

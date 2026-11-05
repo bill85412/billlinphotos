@@ -39,7 +39,7 @@ transient-serenity.html  商品頁
 css/style.css            全站樣式
 js/main.js               導覽列、頁尾、瀑布流、燈箱、商店
 js/config.js             付款連結設定
-images/                  照片（已壓縮為網頁尺寸）
+images/                  照片（網頁版 2560px；sm/ 是縮圖；full/ 是點開放大用的高畫質版本）
 ```
 
 ## 和原站的差異
