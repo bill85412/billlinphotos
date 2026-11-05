@@ -117,10 +117,10 @@ h4 { font-size: clamp(17px, 1.7vw, 19px); line-height: 1.29; }
 .quote-hero { min-height: 539px; height: 72vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; --overlay: .15; }
 .quote-hero h2 { font-style: italic; max-width: 860px; margin: 0 auto; }
 .quote-hero h4 { font-style: italic; margin-top: 22px; }
-/* World map of cities, all in greyscale (the background photo too) so the bright pins stand out.
+/* World map of cities: greyscale land over the colour photo, so the bright pins stand out.
    Bright amber pins link to albums, small white pins are coming soon.
    Hovering a pin draws a leader line up and to the right, ending in a solid black name label. */
-.city-section { min-height: 504px; display: flex; align-items: center; --overlay: .5; background-color: #808080; background-blend-mode: luminosity; }
+.city-section { min-height: 504px; display: flex; align-items: center; --overlay: .55; }
 .map-wrap { width: 100%; max-width: 1180px; margin: 0 auto; padding: 100px var(--gutter) 70px; }
 .map-eyebrow { text-align: center; font-size: 11px; letter-spacing: .24em; text-transform: uppercase; margin-bottom: 22px; }
 .world-map { display: block; width: 100%; height: auto; overflow: visible; }
