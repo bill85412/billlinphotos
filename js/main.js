@@ -559,7 +559,8 @@
           <div class="options" role="radiogroup" aria-label="${esc(g.name)}">${g.values.map((v) => {
             const p = priceOf(sel.map((s, i) => (i === gi ? v : s)));
             const na = p == null && gi > 0; // the first group (Material) always stays clickable; picking it moves the size if needed
-            return `<button type="button" role="radio" aria-checked="${sel[gi] === v}" data-g="${gi}" data-value="${esc(v.value)}"${na ? ' disabled class="unavailable"' : ""}><span>${esc(v.value)}</span>${p != null ? `<small>${usd(p)}</small>` : na ? "<small>Not available</small>" : ""}</button>`;
+            if (na) return ""; // a size that doesn't exist for this material isn't shown at all
+            return `<button type="button" role="radio" aria-checked="${sel[gi] === v}" data-g="${gi}" data-value="${esc(v.value)}"><span>${esc(v.value)}</span>${p != null ? `<small>${usd(p)}</small>` : ""}</button>`;
           }).join("")}</div></div>`).join("");
       const p = priceOf(sel);
       priceEl.textContent = p != null ? usd(p) : "";

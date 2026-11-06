@@ -289,7 +289,6 @@ figure.zoom:hover img { opacity: .9; }
 }
 .options button small { font-size: 14px; color: rgba(0,0,0,.6); }
 .options button:hover { border-color: rgba(0,0,0,.5); }
-.options button.unavailable { opacity: .45; cursor: not-allowed; }
 .options button.soldout { opacity: .45; text-decoration: line-through; }
 .product-options { margin-bottom: 6px; }
 .add-cart:disabled:not(.adding) { background: #777; cursor: not-allowed; }
