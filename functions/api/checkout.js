@@ -27,12 +27,12 @@ export async function onRequestPost({ request, env }) {
     const prev = lines.get(key);
     const q = (prev ? prev.quantity : 0) + quantity;
     if (quantity < 1 || q > MAX_QTY) return json({ error: `Quantity must be between 1 and ${MAX_QTY}.` }, 400);
-    lines.set(key, { key, slug: it.slug, variant: it.variant, quantity: q, ...found });
+    lines.set(key, { key, slug: it.slug, option: it.variant, quantity: q, ...found });
   }
 
   const origin = (env.SITE_URL || new URL(request.url).origin).replace(/\/$/, "");
   const items = [...lines.values()].map((l) => ({
-    name: `${l.product.title} — ${l.variant}`.slice(0, 127),
+    name: `${l.product.title} — ${l.option}`.slice(0, 127),
     sku: l.key.slice(0, 127),
     quantity: String(l.quantity),
     unit_amount: { currency_code: CURRENCY, value: money(l.variant.price) },

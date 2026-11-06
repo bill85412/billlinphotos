@@ -524,35 +524,56 @@
     const pic = document.querySelector(".pg-main img, .product-layout img");
     const image = pic ? pic.getAttribute("src").replace(/^images\/(?!sm\/)/, "images/sm/") : "";
 
-    // Each option group in the HTML: <div class="options" aria-label="Material"> <button data-value data-price> …
-    const options = [...wrap.querySelectorAll(".options")].map((g) => ({
+    // Option groups in the HTML: <div class="options" aria-label="Material|Size"> with <button data-value …>.
+    // A button's price is data-price, or data-prices='{"<value of another group>": price}' when it depends on that choice.
+    // The cart variant is the chosen values joined with " / " (e.g. "Canvas Print / 16 × 24 in"), as in the server catalog.
+    const groups = [...wrap.querySelectorAll(".options")].map((g) => ({
       name: g.getAttribute("aria-label"),
-      values: [...g.querySelectorAll("[data-value]")].map((b) => ({ value: b.dataset.value, price: Math.round(parseFloat(b.dataset.price) * 100) })),
+      values: [...g.querySelectorAll("[data-value]")].map((b) => ({
+        value: b.dataset.value,
+        price: b.dataset.price != null ? Math.round(parseFloat(b.dataset.price) * 100) : null,
+        prices: b.dataset.prices ? JSON.parse(b.dataset.prices) : null,
+      })),
     }));
-    const group = options[0]; // one option group per product
-    let sel = group && group.values[0];
-    const render = () => {
-      wrap.innerHTML = options.map((o) => `<div class="opt-group">
-          <p class="opt-label">${esc(o.name)}</p>
-          <div class="options" role="radiogroup" aria-label="${esc(o.name)}">${o.values.map((v) =>
-            `<button type="button" role="radio" aria-checked="${sel === v}" data-value="${esc(v.value)}"><span>${esc(v.value)}</span><small>${usd(v.price)}</small></button>`).join("")}</div></div>`).join("");
-      priceEl.textContent = sel ? usd(sel.price) : "";
-      add.disabled = !sel;
+    const sel = groups.map((g) => g.values[0]);
+    // price of a full choice: the first button with a price that matches the rest of the choice
+    const priceOf = (choice) => {
+      for (const v of choice) {
+        if (v.prices) { const other = choice.find((o) => o !== v && v.prices[o.value] != null); if (other) return Math.round(v.prices[other.value] * 100); }
+        else if (v.price != null) return v.price;
+      }
+      return null;
     };
+    const variant = () => sel.map((v) => v.value).join(" / ");
+    const render = () => {
+      wrap.innerHTML = groups.map((g, gi) => `<div class="opt-group">
+          <p class="opt-label">${esc(g.name)}</p>
+          <div class="options" role="radiogroup" aria-label="${esc(g.name)}">${g.values.map((v) => {
+            const p = priceOf(sel.map((s, i) => (i === gi ? v : s)));
+            return `<button type="button" role="radio" aria-checked="${sel[gi] === v}" data-g="${gi}" data-value="${esc(v.value)}"><span>${esc(v.value)}</span>${p != null ? `<small>${usd(p)}</small>` : ""}</button>`;
+          }).join("")}</div></div>`).join("");
+      const p = priceOf(sel);
+      priceEl.textContent = p != null ? usd(p) : "";
+      add.disabled = p == null;
+    };
+    const material = () => (sel[groups.findIndex((g) => /material/i.test(g.name))] || {}).value;
     wrap.addEventListener("click", (e) => {
-      const b = e.target.closest("[data-value]"); if (!b || !group) return;
-      sel = group.values.find((v) => v.value === b.dataset.value) || sel;
+      const b = e.target.closest("[data-value]"); if (!b) return;
+      const gi = +b.dataset.g, g = groups[gi];
+      const before = material();
+      sel[gi] = g.values.find((v) => v.value === b.dataset.value) || sel[gi];
       note.textContent = "";
       render();
-      if (gal && gal._material) gal._material(sel.value, true);
+      if (gal && gal._material && material() !== before) gal._material(material(), true);
     });
     render();
     const gal = document.querySelector(".product-gallery");
-    if (gal && gal._material && sel) gal._material(sel.value, false);
+    if (gal && gal._material && material()) gal._material(material(), false);
 
     add.onclick = () => {
-      if (!sel || !slug) return;
-      Cart.add({ slug, variant: sel.value, title, price: sel.price, image });
+      const price = priceOf(sel);
+      if (price == null || !slug) return;
+      Cart.add({ slug, variant: variant(), title, price, image });
       note.textContent = "";
       add.classList.add("adding"); add.textContent = "Added";
       setTimeout(() => { add.classList.remove("adding"); add.textContent = "Add to Cart"; }, 900);

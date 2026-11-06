@@ -44,9 +44,9 @@ const post = (url, body, headers = {}) => new Request(url, { method: "POST", bod
 
 // ---- checkout (whole cart) ----
 let r = await checkout({ request: post("https://billlinphotos.com/api/checkout", { items: [
-  { slug: "transient-serenity", variant: "Canvas Print", quantity: 2 },
-  { slug: "transient-serenity", variant: "Framed Print", quantity: 1 },
-  { slug: "transient-serenity", variant: "Canvas Print", quantity: 1 },
+  { slug: "transient-serenity", variant: "Canvas Print / 16 × 24 in", quantity: 2 },
+  { slug: "transient-serenity", variant: "Framed Print / 16 × 24 in", quantity: 1 },
+  { slug: "transient-serenity", variant: "Canvas Print / 16 × 24 in", quantity: 1 },
 ] }), env });
 assert.equal(r.status, 200);
 assert.equal((await r.json()).url, "https://www.sandbox.paypal.com/checkoutnow?token=ORD1");
@@ -54,10 +54,11 @@ const created = JSON.parse(calls.find((c) => c.url === `${SB}/v2/checkout/orders
 const pu = created.purchase_units[0];
 assert.equal(created.intent, "CAPTURE");
 assert.equal(pu.items.length, 2, "repeated lines are merged");
-assert.equal(pu.items[0].sku, "transient-serenity|Canvas Print");
+assert.equal(pu.items[0].sku, "transient-serenity|Canvas Print / 16 × 24 in");
+assert.equal(pu.items[0].name, "“Transient Serenity” — Canvas Print / 16 × 24 in");
 assert.equal(pu.items[0].quantity, "3");
 assert.equal(pu.items[0].unit_amount.value, "100.00");
-assert.equal(pu.items[1].sku, "transient-serenity|Framed Print");
+assert.equal(pu.items[1].sku, "transient-serenity|Framed Print / 16 × 24 in");
 assert.equal(pu.items[1].unit_amount.value, "80.00");
 assert.equal(pu.amount.breakdown.item_total.value, "380.00");
 assert.equal(pu.amount.value, "380.00");
@@ -68,11 +69,11 @@ console.log("✓ checkout turns the whole cart into one PayPal order, priced fro
 
 r = await checkout({ request: post("https://x/api/checkout", { items: [{ slug: "transient-serenity", variant: "Gold Print", quantity: 1 }] }), env });
 assert.equal(r.status, 404);
-r = await checkout({ request: post("https://x/api/checkout", { items: [{ slug: "transient-serenity", variant: "Canvas Print", quantity: 50 }] }), env });
+r = await checkout({ request: post("https://x/api/checkout", { items: [{ slug: "transient-serenity", variant: "Canvas Print / 16 × 24 in", quantity: 50 }] }), env });
 assert.equal(r.status, 400);
 r = await checkout({ request: post("https://x/api/checkout", { items: [] }), env });
 assert.equal(r.status, 400);
-r = await checkout({ request: post("https://x/api/checkout", { items: [{ slug: "transient-serenity", variant: "Canvas Print", quantity: 1 }] }), env: {} });
+r = await checkout({ request: post("https://x/api/checkout", { items: [{ slug: "transient-serenity", variant: "Canvas Print / 16 × 24 in", quantity: 1 }] }), env: {} });
 assert.equal(r.status, 503);
 console.log("✓ checkout rejects unknown options, silly quantities, empty carts, and missing PayPal keys");
 
@@ -96,8 +97,8 @@ paypalOrder = {
   purchase_units: [{
     reference_id: "cart",
     items: [
-      { name: "Transient Serenity — Framed Print", sku: "transient-serenity|Framed Print", quantity: "1" },
-      { name: "Transient Serenity — Canvas Print", sku: "transient-serenity|Canvas Print", quantity: "2" },
+      { name: "Transient Serenity — Framed Print", sku: "transient-serenity|Framed Print / 16 × 24 in", quantity: "1" },
+      { name: "Transient Serenity — Canvas Print", sku: "transient-serenity|Canvas Print / 16 × 24 in", quantity: "2" },
     ],
     shipping: { name: { full_name: "Ann Buyer" }, address: { address_line_1: "1 Main St", admin_area_2: "Boston", admin_area_1: "MA", postal_code: "02116", country_code: "US" } },
   }],
@@ -180,11 +181,22 @@ if (ROOT) {
     if (!handle) continue;
     assert.equal(`${handle}.html`, f, `${f}: data-handle must match the file name`);
     assert.ok(PRODUCTS[handle], `${f}: no catalog entry for ${handle}`);
-    for (const [, value, price] of html.matchAll(/data-value="([^"]+)" data-price="([^"]+)"/g)) {
-      const v = PRODUCTS[handle].variants[value];
-      assert.ok(v, `${f}: option ${value} missing from the catalog`);
-      assert.equal(v.price, Math.round(parseFloat(price) * 100), `${f}: ${value} price differs from the catalog`);
+    // every combination of the page's option buttons must be a catalog variant with the same price
+    const groups = [...html.matchAll(/<div class="options"[^>]*>([\s\S]*?)<\/div>/g)].map((g) =>
+      [...g[1].matchAll(/data-value="([^"]+)"(?: data-price="([^"]+)")?(?: data-prices='([^']+)')?/g)].map(([, value, price, prices]) => ({ value, price, prices: prices && JSON.parse(prices) })));
+    const combos = groups.reduce((acc, g) => acc.flatMap((c) => g.map((v) => [...c, v])), [[]]);
+    for (const c of combos) {
+      const key = c.map((v) => v.value).join(" / ");
+      const v = PRODUCTS[handle].variants[key];
+      assert.ok(v, `${f}: option ${key} missing from the catalog`);
+      let price = null;
+      for (const o of c) {
+        if (o.prices) { const other = c.find((x) => x !== o && o.prices[x.value] != null); if (other) { price = o.prices[other.value]; break; } }
+        else if (o.price != null) { price = parseFloat(o.price); break; }
+      }
+      assert.equal(v.price, Math.round(price * 100), `${f}: ${key} price differs from the catalog`);
     }
+    assert.equal(combos.length, Object.keys(PRODUCTS[handle].variants).length, `${f}: page and catalog have different option sets`);
   }
   console.log("✓ every product page's options and prices match the server catalog");
 }

@@ -20,10 +20,18 @@ export const SHIPPING = { amount: 0, label: "Free shipping" };
 // Prodigi delivery speed for every order.
 export const PRODIGI_SHIPPING_METHOD = "budget";
 
-const PRINT = {
-  "Canvas Print": { price: 10000, sku: "GLOBAL-CAN-16X24" },
-  "Framed Print": { price: 8000, sku: "GLOBAL-CFPM-16X24" },
+// Prints: one variant per Material × Size, keyed "Material / Size" (the product page joins the chosen buttons with " / ").
+// Prices are starting points — check them against the Prodigi cost + shipping for each size before going live.
+const SIZES = {
+  "12 × 18 in": { canvas: 8000,  framed: 6500,  code: "12X18" },
+  "16 × 24 in": { canvas: 10000, framed: 8000,  code: "16X24" },
+  "24 × 36 in": { canvas: 16000, framed: 14000, code: "24X36" },
 };
+const PRINT = {};
+for (const [size, s] of Object.entries(SIZES)) {
+  PRINT[`Canvas Print / ${size}`] = { price: s.canvas, sku: `GLOBAL-CAN-${s.code}` };
+  PRINT[`Framed Print / ${size}`] = { price: s.framed, sku: `GLOBAL-CFPM-${s.code}` };
+}
 // TODO before going live: replace with the real Prodigi postcard SKU from the Prodigi product catalog.
 const POSTCARD = {
   "4 × 6 in": { price: 500, sku: "CHECK-PRODIGI-POSTCARD-SKU" },
