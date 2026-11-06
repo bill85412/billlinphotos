@@ -189,7 +189,7 @@
       if (f._swiped && Date.now() - f._swiped < 400) return;
       const gallery = f.closest(".product-gallery");
       if (gallery) { // product page: browse the print and its room views
-        const thumbs = [...gallery.querySelectorAll(".pg-thumb")];
+        const thumbs = [...gallery.querySelectorAll(".pg-thumb:not([hidden])")];
         group = thumbs.map((t) => { const i = new Image(); i.src = t.dataset.src; i.alt = t.querySelector("img").alt; return i; });
         idx = Math.max(0, thumbs.findIndex((t) => t.classList.contains("active")));
       } else {
@@ -299,17 +299,27 @@
   /* ---------- Product page gallery: thumbnails switch the main picture (print, living room, office) ---------- */
   document.querySelectorAll(".product-gallery").forEach((g) => {
     const main = g.querySelector(".pg-main img");
-    const thumbs = [...g.querySelectorAll(".pg-thumb")];
+    const all = [...g.querySelectorAll(".pg-thumb")];
+    // Room views carry data-material ("Canvas Print" / "Framed Print"); only the chosen material's views are shown.
+    const shown = () => all.filter((t) => !t.hidden);
     const pick = (t) => {
-      thumbs.forEach((x) => { x.classList.toggle("active", x === t); x.toggleAttribute("aria-current", x === t); });
+      all.forEach((x) => { x.classList.toggle("active", x === t); x.toggleAttribute("aria-current", x === t); });
       main.srcset = t.dataset.srcset; main.src = t.dataset.src; main.alt = t.querySelector("img").alt;
-      main.closest(".pg-main").classList.toggle("is-room", t !== thumbs[0]);
+      main.closest(".pg-main").classList.toggle("is-room", t !== all[0]);
     };
-    thumbs.forEach((t) => t.addEventListener("click", () => pick(t)));
+    const step = (d) => { const s = shown(); const i = s.findIndex((t) => t.classList.contains("active")); pick(s[(i + d + s.length) % s.length]); };
+    all.forEach((t) => t.addEventListener("click", () => pick(t)));
+    // called by the option buttons: show that material's room views and jump to the first one
+    g._material = (m, jump) => {
+      if (!all.some((t) => t.dataset.material)) return;
+      all.forEach((t) => { t.hidden = !!t.dataset.material && t.dataset.material !== m; });
+      const first = all.find((t) => t.dataset.material === m);
+      if (jump && first) pick(first);
+      else if (all.find((t) => t.classList.contains("active")).hidden) pick(all[0]);
+    };
     // ‹ › arrows on the main picture
-    if (thumbs.length > 1) {
+    if (all.length > 1) {
       const fig = main.closest(".pg-main");
-      const step = (d) => { const i = thumbs.findIndex((t) => t.classList.contains("active")); pick(thumbs[(i + d + thumbs.length) % thumbs.length]); };
       [["prev", -1, "Previous view", "M15 5l-7 7 7 7"], ["next", 1, "Next view", "M9 5l7 7-7 7"]].forEach(([cls, d, label, path]) => {
         const b = document.createElement("button");
         b.type = "button"; b.className = `pg-arrow pg-${cls}`; b.setAttribute("aria-label", label);
@@ -333,8 +343,7 @@
     main.addEventListener("touchend", (e) => {
       if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null;
       if (Math.abs(dx) < 40) return;
-      const i = thumbs.findIndex((t) => t.classList.contains("active"));
-      pick(thumbs[(i + (dx < 0 ? 1 : -1) + thumbs.length) % thumbs.length]);
+      step(dx < 0 ? 1 : -1);
       main.closest("figure")._swiped = Date.now();
     });
   });
@@ -535,8 +544,11 @@
       sel = group.values.find((v) => v.value === b.dataset.value) || sel;
       note.textContent = "";
       render();
+      if (gal && gal._material) gal._material(sel.value, true);
     });
     render();
+    const gal = document.querySelector(".product-gallery");
+    if (gal && gal._material && sel) gal._material(sel.value, false);
 
     add.onclick = () => {
       if (!sel || !slug) return;

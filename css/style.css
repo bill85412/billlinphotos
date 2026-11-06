@@ -260,6 +260,7 @@ figure.zoom:hover img { opacity: .9; }
 .pg-thumbs { display: flex; gap: 10px; justify-content: center; }
 .pg-thumbs:has(> .pg-thumb:only-child) { display: none; }
 .pg-thumb { flex: 0 0 auto; width: 76px; height: 76px; padding: 0; border: 0; background: none; cursor: pointer; opacity: .55; outline: 1px solid transparent; outline-offset: 3px; transition: opacity .2s, outline-color .2s; }
+.pg-thumb[hidden] { display: none; }
 .pg-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .pg-thumb:hover { opacity: .85; }
 .pg-thumb.active { opacity: 1; outline-color: #000; }

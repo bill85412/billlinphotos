@@ -7,6 +7,11 @@ Room photos live in tools/rooms/roomN.jpg (owner-supplied, free-licence). Each r
 artwork to erase (quads, image px), the wall plane (a known rectangle on the wall -> its quad in the photo),
 where to hang the new print (centre + max size in wall units), a frame style and the light direction.
 Writes images/mockups/HANDLE-N.jpg (long edge 2000) and images/mockups/sm/HANDLE-N.jpg (long edge 1000).
+
+    python3 tools/roomviews.py images/NAME.jpg HANDLE --canvas
+
+draws a gallery-wrapped stretched canvas instead (no frame; the wrapped side edge shows on the side the camera
+sees, deeper shadow, canvas weave) and writes images/mockups/HANDLE-canvas-N.jpg.
 """
 import sys, pathlib, numpy as np, cv2
 
@@ -74,11 +79,42 @@ def fill_wall(img, quads, donor=None):
     soft = cv2.GaussianBlur(grow.astype(np.float32) / 255, (0, 0), 3)[..., None]
     return out * (1 - soft) + filled * soft
 
-def framed(photo, style, long_px):
+def canvas(p, u, side):
+    """Gallery-wrapped canvas: the face plus the wrapped edge on one side and the bottom, as seen at an angle."""
+    ph, pw = p.shape[:2]
+    ds, db = int(round(2.2 * u)), int(round(1.1 * u))   # visible side depth, bottom depth
+    H, W = ph + db, pw + ds
+    img = np.zeros((H, W, 3), np.float32); alpha = np.zeros((H, W), np.float32)
+    fx = ds if side < 0 else 0                           # face x offset (left side visible -> face shifted right)
+    # canvas weave on the face
+    yy, xx = np.mgrid[0:ph, 0:pw]
+    weave = (np.sin(xx * 1.9) * np.sin(yy * 1.9)) * 2.2 + np.random.default_rng(1).normal(0, 1.2, (ph, pw))
+    img[0:ph, fx:fx + pw] = p + weave[..., None]
+    alpha[0:ph, fx:fx + pw] = 1
+    # side: the image wraps round the stretcher bar, so it continues the outer columns, in shade
+    edge = p[:, :max(2, ds)][:, ::-1] if side < 0 else p[:, -max(2, ds):][:, ::-1]
+    sx = 0 if side < 0 else pw
+    for i in range(ds):  # parallelogram: each column slides down a little (perspective)
+        off = int(round(db * (i + 1) / ds)) if side > 0 else int(round(db * (ds - i) / ds))
+        col = edge[:, min(i, edge.shape[1] - 1)] * 0.62
+        img[off:off + ph, sx + i] = col; alpha[off:off + ph, sx + i] = 1
+    # bottom edge, darker (lit from above)
+    bot = p[-max(2, db):][::-1] * 0.45
+    for j in range(db):
+        sh = int(round(ds * (j + 1) / db))
+        x0 = fx + (sh if side > 0 else -sh)
+        x0c, x1c = max(0, x0), min(W, x0 + pw)
+        img[ph + j, x0c:x1c] = bot[min(j, bot.shape[0] - 1), x0c - x0:x1c - x0]; alpha[ph + j, x0c:x1c] = 1
+    # soft highlight along the face's top and outer edges, slight darkening toward the wrap
+    img[0:max(1, int(u * 0.3)), fx:fx + pw] += 14
+    return np.clip(img, 0, 255), cv2.GaussianBlur(alpha, (0, 0), 0.6)
+
+def framed(photo, style, long_px, side=1):
     """Return RGBA of the print with its frame, at roughly long_px on the long side."""
     h, w = photo.shape[:2]; s = long_px / max(h, w)
     p = cv2.resize(photo, (max(1, round(w * s)), max(1, round(h * s))), interpolation=cv2.INTER_AREA).astype(np.float32)
     ph, pw = p.shape[:2]; u = long_px / 100.0
+    if style == "canvas": return canvas(p, u, side)
     if style == "walnut": fw, mat, fc = 2.2 * u, 0, (52, 66, 86)          # BGR dark walnut floater
     elif style == "black-mat": fw, mat, fc = 1.6 * u, 7 * u, (24, 24, 24)
     elif style == "oak-mat": fw, mat, fc = 1.5 * u, 7 * u, (120, 170, 205)
@@ -105,7 +141,7 @@ def framed(photo, style, long_px):
     img[fw:H - fw, fw:W - fw] += sheen[fw:H - fw, fw:W - fw, None]
     return np.clip(img, 0, 255), np.ones((H, W), np.float32)
 
-def render(photo_path, handle):
+def render(photo_path, handle, as_canvas=False):
     photo = cv2.imread(str(photo_path)); ar = photo.shape[1] / photo.shape[0]
     outdir = ROOT / "images/mockups"; (outdir / "sm").mkdir(parents=True, exist_ok=True)
     for i, R in enumerate(ROOMS, 1):
@@ -116,10 +152,13 @@ def render(photo_path, handle):
         g = R["hang"]
         w = g["maxw"]; h = w / ar
         if h > g["maxh"]: h = g["maxh"]; w = h * ar
-        art, alpha = framed(photo, R["frame"], 1400)
+        q = np.float32(R["plane_quad"])  # which side of a protruding canvas the camera sees
+        side = -1 if np.linalg.norm(q[3] - q[0]) > np.linalg.norm(q[2] - q[1]) * 1.01 else 1
+        art, alpha = framed(photo, "canvas" if as_canvas else R["frame"], 1400, side)
         AH, AW = art.shape[:2]
         # frame adds a border: keep the *framed* piece inside the box
         k = min(g["maxw"] / AW, g["maxh"] / AH) if (AW / AH) else 1
+        if as_canvas and "mat" in R["frame"]: k *= 0.8  # a canvas has no mat: keep it about the same size as the print inside the mat
         w, h = AW * k, AH * k
         x0, y0 = g["cx"] - w / 2, g["cy"] - h / 2
         src = np.float32([(0, 0), (AW, 0), (AW, AH), (0, AH)])
@@ -131,8 +170,9 @@ def render(photo_path, handle):
         a = cv2.warpPerspective(alpha, P, (WW, HH), flags=cv2.INTER_LINEAR)
         # shadow cast on the wall
         diag = np.linalg.norm(dst[2] - dst[0]); lx, ly = R["light"]
-        sh = cv2.warpAffine(a, np.float32([[1, 0, lx * diag * 0.012], [0, 1, ly * diag * 0.012]]), (WW, HH))
-        sh = np.maximum(cv2.GaussianBlur(sh, (0, 0), diag * 0.018) * 0.42, cv2.GaussianBlur(a, (0, 0), diag * 0.004) * 0.3)
+        depth = 1.8 if as_canvas else 1.0  # a stretched canvas stands further off the wall
+        sh = cv2.warpAffine(a, np.float32([[1, 0, lx * diag * 0.012 * depth], [0, 1, ly * diag * 0.012 * depth]]), (WW, HH))
+        sh = np.maximum(cv2.GaussianBlur(sh, (0, 0), diag * 0.018 * depth) * 0.42, cv2.GaussianBlur(a, (0, 0), diag * 0.004) * 0.3)
         out = base * (1 - sh[..., None] * (1 - a[..., None]))
         # match the room's light: scale the print by the wall's local brightness (relative to its brightest part)
         lum = cv2.cvtColor(np.clip(base, 0, 255).astype(np.uint8), cv2.COLOR_BGR2GRAY).astype(np.float32)
@@ -147,10 +187,11 @@ def render(photo_path, handle):
         out = cv2.GaussianBlur(out, (0, 0), 0.6) * 0.5 + out * 0.5  # match camera softness
         out = np.clip(out, 0, 255).astype(np.uint8)
         s = 2000 / max(out.shape[:2]); big = cv2.resize(out, None, fx=s, fy=s, interpolation=cv2.INTER_AREA)
-        cv2.imwrite(str(outdir / f"{handle}-{i}.jpg"), big, [cv2.IMWRITE_JPEG_QUALITY, 88, cv2.IMWRITE_JPEG_PROGRESSIVE, 1])
+        name = f"{handle}-canvas-{i}" if as_canvas else f"{handle}-{i}"
+        cv2.imwrite(str(outdir / f"{name}.jpg"), big, [cv2.IMWRITE_JPEG_QUALITY, 88, cv2.IMWRITE_JPEG_PROGRESSIVE, 1])
         sm = cv2.resize(out, None, fx=1000 / max(out.shape[:2]), fy=1000 / max(out.shape[:2]), interpolation=cv2.INTER_AREA)
-        cv2.imwrite(str(outdir / "sm" / f"{handle}-{i}.jpg"), sm, [cv2.IMWRITE_JPEG_QUALITY, 85, cv2.IMWRITE_JPEG_PROGRESSIVE, 1])
-        print("wrote", outdir / f"{handle}-{i}.jpg", big.shape[1], "x", big.shape[0])
+        cv2.imwrite(str(outdir / "sm" / f"{name}.jpg"), sm, [cv2.IMWRITE_JPEG_QUALITY, 85, cv2.IMWRITE_JPEG_PROGRESSIVE, 1])
+        print("wrote", outdir / f"{name}.jpg", big.shape[1], "x", big.shape[0])
 
 if __name__ == "__main__":
-    render(ROOT / sys.argv[1], sys.argv[2])
+    render(ROOT / sys.argv[1], sys.argv[2], "--canvas" in sys.argv[3:])
