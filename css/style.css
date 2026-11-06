@@ -253,6 +253,10 @@ figure.zoom:hover img { opacity: .9; }
 .product-gallery { display: flex; flex-direction: column; gap: 14px; min-width: 0; --stage: 2 / 3; }
 .pg-main { cursor: zoom-in; position: relative; overflow: hidden; }
 .pg-main img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; max-width: none; object-fit: contain; }
+.pg-arrow { position: absolute; top: 50%; z-index: 2; transform: translateY(-50%); display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; padding: 0; border: 0; border-radius: 50%; background: rgba(0,0,0,.28); color: #fff; cursor: pointer; opacity: .85; transition: opacity .2s, background .2s; }
+.pg-arrow:hover { background: rgba(0,0,0,.5); opacity: 1; }
+.pg-prev { left: 14px; } .pg-next { right: 14px; }
+@media (hover: hover) { .pg-arrow { opacity: 0; } .pg-main:hover .pg-arrow, .pg-arrow:focus-visible { opacity: .85; } }
 .pg-thumbs { display: flex; gap: 10px; justify-content: center; }
 .pg-thumbs:has(> .pg-thumb:only-child) { display: none; }
 .pg-thumb { flex: 0 0 auto; width: 76px; height: 76px; padding: 0; border: 0; background: none; cursor: pointer; opacity: .55; outline: 1px solid transparent; outline-offset: 3px; transition: opacity .2s, outline-color .2s; }
@@ -415,6 +419,7 @@ main > .has-footer { flex: 1 0 auto; }
   .product-layout:not(.wide) .pg-main { width: 100%; height: auto; max-width: none; aspect-ratio: var(--stage); max-height: 72svh; }
   .product-layout.wide .pg-main { height: auto; aspect-ratio: 1 / 1; }
   .pg-thumbs { gap: 8px; }
+  .pg-arrow { width: 40px; height: 40px; } .pg-prev { left: 8px; } .pg-next { right: 8px; }
   .pg-thumb { width: calc((100% - 32px) / 5); height: auto; aspect-ratio: 1; }
 }
 @media (max-width: 560px) {

@@ -291,6 +291,18 @@
       main.closest(".pg-main").classList.toggle("is-room", t !== thumbs[0]);
     };
     thumbs.forEach((t) => t.addEventListener("click", () => pick(t)));
+    // ‹ › arrows on the main picture
+    if (thumbs.length > 1) {
+      const fig = main.closest(".pg-main");
+      const step = (d) => { const i = thumbs.findIndex((t) => t.classList.contains("active")); pick(thumbs[(i + d + thumbs.length) % thumbs.length]); };
+      [["prev", -1, "Previous view", "M15 5l-7 7 7 7"], ["next", 1, "Next view", "M9 5l7 7-7 7"]].forEach(([cls, d, label, path]) => {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = `pg-arrow pg-${cls}`; b.setAttribute("aria-label", label);
+        b.innerHTML = `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></svg>`;
+        b.addEventListener("click", (e) => { e.stopPropagation(); step(d); });
+        fig.append(b);
+      });
+    }
     // swipe the main picture on touch screens
     let x0 = null;
     main.addEventListener("touchstart", (e) => { x0 = e.touches[0].clientX; }, { passive: true });
