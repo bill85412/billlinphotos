@@ -376,7 +376,7 @@
       cats.querySelectorAll("a").forEach((a) => a.classList.toggle("active", a.dataset.cat === cat));
       let n = 0;
       document.querySelectorAll(".product-card").forEach((p) => {
-        const ok = cat === "all" || (p.dataset.cats || "").split(" ").includes(cat);
+        const ok = (p.dataset.cats || "").split(" ").includes(cat);
         p.style.display = ok ? "" : "none"; if (ok) n++;
       });
       document.querySelector(".empty").style.display = n ? "none" : "block";
@@ -385,7 +385,10 @@
       const a = e.target.closest("a"); if (!a) return;
       e.preventDefault(); history.replaceState(null, "", a.getAttribute("href")); apply(a.dataset.cat);
     });
-    apply((location.hash || "#all").slice(1));
+    // no "All" tab: open on Prints unless the address names another category
+    const known = [...cats.querySelectorAll("a")].map((a) => a.dataset.cat);
+    const want = location.hash.slice(1);
+    apply(known.includes(want) ? want : "prints");
   }
 
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
