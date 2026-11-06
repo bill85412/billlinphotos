@@ -560,7 +560,7 @@
             const p = priceOf(sel.map((s, i) => (i === gi ? v : s)));
             const na = p == null && gi > 0; // the first group (Material) always stays clickable; picking it moves the size if needed
             if (na) return ""; // a size that doesn't exist for this material isn't shown at all
-            return `<button type="button" role="radio" aria-checked="${sel[gi] === v}" data-g="${gi}" data-value="${esc(v.value)}"><span>${esc(v.value)}</span>${p != null ? `<small>${usd(p)}</small>` : ""}</button>`;
+            return `<button type="button" role="radio" aria-checked="${sel[gi] === v}" data-g="${gi}" data-value="${esc(v.value)}"><span>${esc(v.value)}</span></button>`; // no prices on the buttons (owner's choice); the total shows below
           }).join("")}</div></div>`).join("");
       const p = priceOf(sel);
       priceEl.textContent = p != null ? usd(p) : "";
