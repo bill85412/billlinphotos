@@ -2,21 +2,36 @@
   const page = document.body.dataset.page || "";
   const cfg = window.SITE_CONFIG || {};
 
-  /* ---------- Shop: the cart lives in Shopify (Storefront API), the way skypathstudio.com does it ---------- */
-  const SHOP = cfg.shopify || {};
-  const SHOP_READY = !!(SHOP.domain && SHOP.token);
-  const API_VERSION = "2025-07";
-  const CART_ID_KEY = "billlin-shopify-cart";
-  const COUNT_KEY = "billlin-cart-count";
+  /* ---------- Shop: the cart lives in this browser; checkout is PayPal, orders go to Prodigi (functions/) ---------- */
+  const CART_KEY = "billlin-cart";
   const MAX_QTY = 10;
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
     set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} },
   };
-  function updateCartBadge(n = +store.get(COUNT_KEY) || 0) {
+  // Cart lines: { slug, variant, quantity, title, price (cents, for display only — the server sets the real price), image }
+  const Cart = {
+    lines() {
+      try { const a = JSON.parse(store.get(CART_KEY) || "[]"); return Array.isArray(a) ? a.filter((l) => l && l.slug && l.variant) : []; }
+      catch (e) { return []; }
+    },
+    save(lines) { store.set(CART_KEY, lines.length ? JSON.stringify(lines) : null); updateCartBadge(); },
+    count() { return this.lines().reduce((n, l) => n + (+l.quantity || 0), 0); },
+    add(item) {
+      const lines = this.lines();
+      const hit = lines.find((l) => l.slug === item.slug && l.variant === item.variant);
+      if (hit) { hit.quantity = Math.min(MAX_QTY, hit.quantity + 1); Object.assign(hit, { title: item.title, price: item.price, image: item.image }); }
+      else lines.push({ ...item, quantity: 1 });
+      this.save(lines);
+    },
+    setQty(i, q) { const lines = this.lines(); if (!lines[i]) return; lines[i].quantity = Math.max(1, Math.min(MAX_QTY, q)); this.save(lines); },
+    remove(i) { const lines = this.lines(); lines.splice(i, 1); this.save(lines); },
+    clear() { this.save([]); },
+  };
+  function updateCartBadge(n = Cart.count()) {
     document.querySelectorAll(".cart-count").forEach((el) => { el.textContent = n; el.hidden = !n; });
   }
-  window.addEventListener("storage", (e) => { if (e.key === COUNT_KEY) updateCartBadge(); });
+  window.addEventListener("storage", (e) => { if (e.key === CART_KEY) updateCartBadge(); });
 
   /* ---------- Header & footer (shared across pages) ---------- */
   const nav = [
@@ -63,7 +78,7 @@
 
   const footer = document.createElement("footer");
   footer.className = "site-footer";
-  footer.innerHTML = `<p>Copyright © ${new Date().getFullYear()} by Bill Lin</p>`;
+  footer.innerHTML = `<p>Copyright © ${new Date().getFullYear()} by Bill Lin${page === "shop" ? ` · <a href="returns.html">Returns &amp; Refunds</a>` : ""}</p>`;
   // The copyright sits at the bottom of the page's last section (over its photo or colour), not in a band of its own.
   const lastSection = document.querySelector("main") && document.querySelector("main").lastElementChild;
   if (lastSection) {
@@ -369,82 +384,6 @@
   const money = (m) => (m ? new Intl.NumberFormat("en-US", { style: "currency", currency: m.currencyCode || "USD" }).format(+m.amount) : "");
   const COMING_SOON = "Online ordering is coming soon.";
 
-  /* ---------- Shopify Storefront API ---------- */
-  async function storefront(query, variables = {}) {
-    const r = await fetch(`https://${SHOP.domain}/api/${API_VERSION}/graphql.json`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Shopify-Storefront-Access-Token": SHOP.token },
-      body: JSON.stringify({ query, variables }),
-    });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok || j.errors) throw new Error((j.errors && j.errors[0] && j.errors[0].message) || `Shopify ${r.status}`);
-    return j.data;
-  }
-  const CART_FIELDS = `id checkoutUrl totalQuantity
-    cost { subtotalAmount { amount currencyCode } }
-    lines(first: 50) { nodes { id quantity
-      cost { totalAmount { amount currencyCode } }
-      merchandise { ... on ProductVariant { id title image { url altText } product { title handle } } } } }`;
-
-  const Shop = {
-    cart: null,
-    remember(cart) {
-      this.cart = cart || null;
-      store.set(CART_ID_KEY, cart ? cart.id : null);
-      store.set(COUNT_KEY, cart && cart.totalQuantity ? String(cart.totalQuantity) : null);
-      updateCartBadge(cart ? cart.totalQuantity : 0);
-      return this.cart;
-    },
-    async load() {
-      const id = store.get(CART_ID_KEY);
-      if (!SHOP_READY || !id) return this.remember(null);
-      const d = await storefront(`query($id: ID!) { cart(id: $id) { ${CART_FIELDS} } }`, { id });
-      return this.remember(d.cart); // null once the order is placed or the cart has expired
-    },
-    async mutate(field, sig, args, vars) {
-      const d = await storefront(`mutation(${sig}) { ${field}(${args}) { cart { ${CART_FIELDS} } userErrors { message } } }`, vars);
-      const res = d[field];
-      if (res.userErrors && res.userErrors.length) throw new Error(res.userErrors[0].message);
-      return this.remember(res.cart);
-    },
-    async add(merchandiseId, quantity = 1) {
-      const lines = [{ merchandiseId, quantity }];
-      if (this.cart || store.get(CART_ID_KEY)) {
-        try {
-          return await this.mutate("cartLinesAdd", "$id: ID!, $lines: [CartLineInput!]!", "cartId: $id, lines: $lines", { id: store.get(CART_ID_KEY), lines });
-        } catch (e) { /* cart expired or already checked out: start a new one */ }
-      }
-      return this.mutate("cartCreate", "$input: CartInput!", "input: $input", { input: { lines } });
-    },
-    update(lineId, quantity) {
-      return this.mutate("cartLinesUpdate", "$id: ID!, $lines: [CartLineUpdateInput!]!", "cartId: $id, lines: $lines", { id: this.cart.id, lines: [{ id: lineId, quantity }] });
-    },
-    remove(lineId) {
-      return this.mutate("cartLinesRemove", "$id: ID!, $ids: [ID!]!", "cartId: $id, lineIds: $ids", { id: this.cart.id, ids: [lineId] });
-    },
-  };
-  if (SHOP_READY && store.get(CART_ID_KEY)) Shop.load().catch(() => {});
-  else if (!SHOP_READY) Shop.remember(null);
-
-  /* ---------- Multi-print discount (set the same tiers as an automatic discount in Shopify) ---------- */
-  const BUNDLE = Array.isArray(cfg.bundleDiscount) && cfg.bundleDiscount.length ? cfg.bundleDiscount.slice().sort((a, b) => a.qty - b.qty) : null;
-  function bundleHTML(count, withLink) {
-    if (!BUNDLE) return "";
-    const top = BUNDLE[BUNDLE.length - 1];
-    const reached = BUNDLE.filter((t) => count >= t.qty).pop();
-    const next = BUNDLE.find((t) => count < t.qty);
-    const title = !count ? `Save ${BUNDLE.map((t, i) => `${t.percent}% on ${i === BUNDLE.length - 1 ? `${t.qty}+` : t.qty} prints`).join(", ")}`
-      : next ? `${reached ? `You're saving ${reached.percent}%. ` : ""}Add ${next.qty - count === 1 ? "one more print" : `${next.qty - count} more prints`} for ${next.percent}% off your order`
-      : `You're saving ${reached.percent}% on this order`;
-    const fill = Math.min(100, (count / top.qty) * 100);
-    return `<div class="bundle">
-      <p class="bundle-title">${esc(title)}</p>
-      <div class="bundle-bar"><span style="width:${fill}%"></span></div>
-      <div class="bundle-steps">${BUNDLE.map((t, i) => `<span style="left:${(t.qty / top.qty) * 100}%"><b>${t.percent}% off</b>${i === BUNDLE.length - 1 ? `${t.qty}+` : t.qty} prints</span>`).join("")}</div>
-      ${withLink ? `<a class="bundle-link" href="shop.html">Browse prints →</a>` : `<p class="bundle-sub">Mix any prints and sizes.</p>`}
-    </div>`;
-  }
-
   /* ---------- Cart view: used by the slide-in drawer and by cart.html ---------- */
   const icons = {
     x: `<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 3l10 10M13 3L3 13"/></svg>`,
@@ -453,66 +392,71 @@
     lock: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`,
   };
   const SHIPPING_NOTE = cfg.shippingNote || "Free shipping";
-  const thumb = (url) => (url ? url + (url.includes("?") ? "&" : "?") + "width=240" : "");
+  const usd = (cents) => money({ amount: (+cents || 0) / 100, currencyCode: "USD" });
 
-  function cartViewHTML(cart, loading) {
-    const lines = (cart && cart.lines && cart.lines.nodes) || [];
+  function cartViewHTML() {
+    const lines = Cart.lines();
     if (!lines.length) {
-      if (loading) return { body: `<div class="drawer-empty"><span class="spinner"></span></div>`, foot: "" };
       return { body: `<div class="drawer-empty">${cartIcon}<p>Your cart is empty</p><a href="shop.html">Continue Shopping →</a></div>`, foot: "" };
     }
-    const body = `${bundleHTML(cart.totalQuantity, true)}<ul>${lines.map((l) => {
-      const v = l.merchandise || {}, p = v.product || {};
-      const url = p.handle ? `${p.handle}.html` : "shop.html";
-      const variant = v.title && v.title !== "Default Title" ? v.title : "";
+    const failed = /[?&]payment=failed/.test(location.search);
+    const body = `<ul>${lines.map((l, i) => {
+      const url = `${encodeURIComponent(l.slug)}.html`;
       return `
-      <li class="drawer-line" data-line="${esc(l.id)}" data-q="${l.quantity}">
-        <a class="drawer-thumb" href="${esc(url)}">${v.image ? `<img src="${esc(thumb(v.image.url))}" alt="">` : ""}</a>
+      <li class="drawer-line" data-i="${i}" data-q="${l.quantity}">
+        <a class="drawer-thumb" href="${url}">${l.image ? `<img src="${esc(l.image)}" alt="">` : ""}</a>
         <div class="drawer-info">
-          <a class="drawer-title" href="${esc(url)}">${esc(p.title || "")}</a>
-          ${variant ? `<p class="drawer-variant">${esc(variant)}</p>` : ""}
+          <a class="drawer-title" href="${url}">${esc(l.title || l.slug)}</a>
+          <p class="drawer-variant">${esc(l.variant)}</p>
           <div class="drawer-row">
-            <p class="drawer-price">${money(l.cost.totalAmount)}</p>
+            <p class="drawer-price">${usd(l.price * l.quantity)}</p>
             <div class="stepper"><button class="minus" type="button" aria-label="Decrease quantity"${l.quantity <= 1 ? " disabled" : ""}>−</button><span>${l.quantity}</span><button class="plus" type="button" aria-label="Increase quantity"${l.quantity >= MAX_QTY ? " disabled" : ""}>+</button></div>
-            <button class="remove" type="button" aria-label="Remove ${esc(p.title || "item")}">${icons.trash}</button>
+            <button class="remove" type="button" aria-label="Remove ${esc(l.title || "item")}">${icons.trash}</button>
           </div>
         </div>
       </li>`;
     }).join("")}</ul>`;
+    const subtotal = lines.reduce((n, l) => n + l.price * l.quantity, 0);
     const foot = `
-      <p class="drawer-subtotal"><span>Subtotal</span><span>${money(cart.cost.subtotalAmount)}</span></p>
+      <p class="drawer-subtotal"><span>Subtotal</span><span>${usd(subtotal)}</span></p>
       <p class="drawer-ship">${icons.truck}${esc(SHIPPING_NOTE)}</p>
       <button class="drawer-checkout" type="button">Checkout</button>
-      <p class="drawer-note" role="status"></p>
-      <p class="drawer-secure">${icons.lock}Secure checkout · PayPal and cards accepted</p>`;
+      <p class="drawer-note" role="status">${failed ? "Your payment didn't go through. Please try again." : ""}</p>
+      <p class="drawer-secure">${icons.lock}Secure checkout · PayPal and cards accepted</p>
+      <p class="drawer-policy"><a href="returns.html">Returns &amp; refunds</a></p>`;
     return { body, foot };
   }
 
   // Wires up +/−/remove/checkout inside a cart view; `rerender` redraws it after each change.
   function bindCartView(root, rerender) {
     root.addEventListener("click", async (e) => {
-      const note = () => root.querySelector(".drawer-note");
       const line = e.target.closest(".drawer-line");
       const btn = e.target.closest(".plus, .minus, .remove");
       if (line && btn) {
-        const q = +line.dataset.q;
-        line.classList.add("busy");
-        root.querySelectorAll(".drawer-line button").forEach((b) => (b.disabled = true));
-        try {
-          if (btn.classList.contains("remove")) await Shop.remove(line.dataset.line);
-          else await Shop.update(line.dataset.line, btn.classList.contains("plus") ? Math.min(MAX_QTY, q + 1) : Math.max(1, q - 1));
-          rerender();
-        } catch (err) {
-          rerender();
-          const n = note(); if (n) n.textContent = "Something went wrong. Please try again.";
-        }
+        const i = +line.dataset.i, q = +line.dataset.q;
+        if (btn.classList.contains("remove")) Cart.remove(i);
+        else Cart.setQty(i, btn.classList.contains("plus") ? q + 1 : q - 1);
+        rerender();
         return;
       }
       const co = e.target.closest(".drawer-checkout");
-      if (co) {
-        if (Shop.cart && Shop.cart.checkoutUrl) { co.classList.add("loading"); location.href = Shop.cart.checkoutUrl; }
-        else note().textContent = COMING_SOON;
+      if (!co || co.classList.contains("loading")) return;
+      const note = root.querySelector(".drawer-note");
+      note.textContent = "";
+      co.classList.add("loading"); co.disabled = true;
+      try {
+        const r = await fetch("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: Cart.lines().map((l) => ({ slug: l.slug, variant: l.variant, quantity: l.quantity })) }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (r.ok && j.url) { location.href = j.url; return; }
+        note.textContent = (r.status === 503 || (r.status === 404 && !j.error)) ? COMING_SOON : j.error || "Checkout is unavailable right now. Please try again in a moment.";
+      } catch (err) {
+        note.textContent = "Checkout is unavailable right now. Please try again in a moment.";
       }
+      co.classList.remove("loading"); co.disabled = false;
     });
   }
 
@@ -536,17 +480,15 @@
     document.addEventListener("keydown", (e) => { if (e.key === "Escape" && drawer.classList.contains("open")) closeCart(); });
     bindCartView(drawer, () => renderDrawer());
   }
-  function renderDrawer(loading) {
-    const { body, foot } = cartViewHTML(Shop.cart, loading);
+  function renderDrawer() {
+    const { body, foot } = cartViewHTML();
     drawer.querySelector(".drawer-body").innerHTML = body;
     const f = drawer.querySelector(".drawer-foot");
     f.innerHTML = foot; f.hidden = !foot;
   }
-  function openCart(fresh) {
+  function openCart() {
     if (!drawer) buildDrawer();
-    const needsLoad = !fresh && SHOP_READY && store.get(CART_ID_KEY);
-    renderDrawer(needsLoad && !Shop.cart);
-    if (needsLoad) Shop.load().then(() => renderDrawer(), () => renderDrawer());
+    renderDrawer();
     drawer.hidden = false;
     document.documentElement.classList.add("no-scroll");
     requestAnimationFrame(() => requestAnimationFrame(() => drawer.classList.add("open")));
@@ -562,87 +504,48 @@
     document.querySelectorAll(".site-header .cart").forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); openCart(); }));
   }
 
-  /* ---------- Product page: options and prices come from Shopify ---------- */
+  /* ---------- Product page: option buttons (data-value / data-price) → Add to Cart ---------- */
   const prod = document.querySelector(".product-info");
   if (prod) {
     const wrap = prod.querySelector(".product-options");
     const priceEl = prod.querySelector(".price");
     const note = prod.querySelector(".form-note");
     const add = prod.querySelector(".add-cart");
-    const bundleBox = prod.querySelector(".bundle-box");
-    if (bundleBox) bundleBox.innerHTML = bundleHTML(0, false);
+    const slug = prod.dataset.handle;
+    const title = (prod.querySelector("h1") || {}).textContent || document.title;
+    const pic = document.querySelector(".pg-main img, .product-layout img");
+    const image = pic ? pic.getAttribute("src").replace(/^images\/(?!sm\/)/, "images/sm/") : "";
 
-    // Until Shopify answers (or if the shop isn't connected yet), use the options written in the page.
-    let model = {
-      options: [...wrap.querySelectorAll(".options")].map((g) => ({ name: g.getAttribute("aria-label"), values: [...g.querySelectorAll("[data-value]")].map((b) => b.dataset.value) })),
-      variants: [...wrap.querySelectorAll(".options [data-value]")].map((b) => ({
-        id: null, available: true, price: { amount: b.dataset.price, currencyCode: "USD" },
-        sel: { [b.closest(".options").getAttribute("aria-label")]: b.dataset.value },
-      })),
-    };
-    let sel = {};
-    const find = (s) => model.variants.find((v) => model.options.every((o) => v.sel[o.name] === s[o.name]));
-    const pickDefault = () => {
-      const v = model.variants.find((x) => x.available) || model.variants[0];
-      sel = v ? { ...v.sel } : {};
-    };
+    // Each option group in the HTML: <div class="options" aria-label="Material"> <button data-value data-price> …
+    const options = [...wrap.querySelectorAll(".options")].map((g) => ({
+      name: g.getAttribute("aria-label"),
+      values: [...g.querySelectorAll("[data-value]")].map((b) => ({ value: b.dataset.value, price: Math.round(parseFloat(b.dataset.price) * 100) })),
+    }));
+    const group = options[0]; // one option group per product
+    let sel = group && group.values[0];
     const render = () => {
-      wrap.innerHTML = model.options.filter((o) => !(o.values.length === 1 && o.values[0] === "Default Title")).map((o) => {
-        const prices = new Set(o.values.map((val) => { const v = find({ ...sel, [o.name]: val }); return v ? v.price.amount : ""; }));
-        return `<div class="opt-group">
+      wrap.innerHTML = options.map((o) => `<div class="opt-group">
           <p class="opt-label">${esc(o.name)}</p>
-          <div class="options" role="radiogroup" aria-label="${esc(o.name)}">${o.values.map((val) => {
-            const v = find({ ...sel, [o.name]: val });
-            const off = !v || !v.available;
-            return `<button type="button" role="radio" aria-checked="${sel[o.name] === val}" data-opt="${esc(o.name)}" data-value="${esc(val)}"${off ? ' class="soldout"' : ""}><span>${esc(val)}</span>${v && prices.size > 1 ? `<small>${money(v.price)}</small>` : ""}${v && prices.size === 1 && model.options.length === 1 ? `<small>${money(v.price)}</small>` : ""}</button>`;
-          }).join("")}</div></div>`;
-      }).join("");
-      const v = find(sel);
-      priceEl.textContent = v ? money(v.price) : "";
-      const sold = !v || !v.available;
-      add.disabled = sold;
-      add.textContent = sold ? "Sold Out" : "Add to Cart";
+          <div class="options" role="radiogroup" aria-label="${esc(o.name)}">${o.values.map((v) =>
+            `<button type="button" role="radio" aria-checked="${sel === v}" data-value="${esc(v.value)}"><span>${esc(v.value)}</span><small>${usd(v.price)}</small></button>`).join("")}</div></div>`).join("");
+      priceEl.textContent = sel ? usd(sel.price) : "";
+      add.disabled = !sel;
     };
     wrap.addEventListener("click", (e) => {
-      const b = e.target.closest("[data-opt]"); if (!b) return;
-      sel[b.dataset.opt] = b.dataset.value;
-      if (!find(sel)) { // keep the click, then fall back to the first variant that has it
-        const v = model.variants.find((x) => x.sel[b.dataset.opt] === b.dataset.value);
-        if (v) sel = { ...v.sel };
-      }
+      const b = e.target.closest("[data-value]"); if (!b || !group) return;
+      sel = group.values.find((v) => v.value === b.dataset.value) || sel;
       note.textContent = "";
       render();
     });
-    pickDefault(); render();
+    render();
 
-    if (SHOP_READY && prod.dataset.handle) {
-      storefront(`query($h: String!) { product(handle: $h) { title options { name optionValues { name } }
-          variants(first: 250) { nodes { id availableForSale selectedOptions { name value } price { amount currencyCode } } } } }`, { h: prod.dataset.handle })
-        .then((d) => {
-          const p = d.product;
-          if (!p) { note.textContent = "This print isn't available to order right now."; add.disabled = true; return; }
-          model = {
-            options: p.options.map((o) => ({ name: o.name, values: o.optionValues.map((v) => v.name) })),
-            variants: p.variants.nodes.map((v) => ({ id: v.id, available: v.availableForSale, price: v.price, sel: Object.fromEntries(v.selectedOptions.map((o) => [o.name, o.value])) })),
-          };
-          pickDefault(); render();
-        })
-        .catch(() => {});
-    }
-
-    add.onclick = async () => {
-      const v = find(sel);
-      if (!v) return;
-      if (!SHOP_READY || !v.id) { note.textContent = COMING_SOON; return; }
+    add.onclick = () => {
+      if (!sel || !slug) return;
+      Cart.add({ slug, variant: sel.value, title, price: sel.price, image });
       note.textContent = "";
-      add.disabled = true; add.classList.add("adding"); add.textContent = "Adding…";
-      try {
-        await Shop.add(v.id, 1);
-        openCart(true);
-      } catch (err) {
-        note.textContent = "Couldn't add this to your cart. Please try again.";
-      }
-      add.classList.remove("adding"); render();
+      add.classList.add("adding"); add.textContent = "Added";
+      setTimeout(() => { add.classList.remove("adding"); add.textContent = "Add to Cart"; }, 900);
+      openCart();
     };
   }
 
@@ -650,13 +553,15 @@
   const cartEl = document.querySelector("#cart");
   if (cartEl) {
     cartEl.classList.add("cart-view");
-    const render = (loading) => {
-      const { body, foot } = cartViewHTML(Shop.cart, loading);
+    const render = () => {
+      const { body, foot } = cartViewHTML();
       cartEl.innerHTML = `<div class="cart-view-body">${body}</div>${foot ? `<div class="cart-view-foot">${foot}</div>` : ""}`;
     };
-    bindCartView(cartEl, () => render());
-    const id = SHOP_READY && store.get(CART_ID_KEY);
-    render(!!id);
-    if (id) Shop.load().then(() => render(), () => render());
+    bindCartView(cartEl, render);
+    render();
   }
+
+  /* ---------- Order confirmed: the payment went through, so empty the cart ---------- */
+  if (document.querySelector(".order-done")) Cart.clear();
+  updateCartBadge();
 })();
