@@ -349,20 +349,10 @@ html.no-scroll { overflow: hidden; }
 
 /* cart page (same cart view as the drawer) */
 .cart-page { padding: 150px var(--gutter) 120px; min-height: 70vh; }
-.policy { padding: 150px var(--gutter) 130px; }
-.policy-inner { max-width: 720px; margin: 0 auto; }
-.policy h1 { font-size: 34px; text-align: center; margin-bottom: 30px; }
-.policy h2 { font-size: 24px; font-weight: 500; margin: 38px 0 10px; }
-.policy p { font-size: 19px; line-height: 1.7; margin-bottom: 14px; }
-.policy a, .order-done a:not(.btn), .site-footer a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
-.policy-lead { font-size: 20px; }
-.policy-small { margin-top: 34px; font-size: 16px !important; color: rgba(0,0,0,.6); }
 .order-done { padding: 170px var(--gutter) 150px; min-height: 70vh; text-align: center; }
 .order-done h1 { font-size: 34px; margin-bottom: 22px; }
 .order-done p { font-size: 19px; line-height: 1.7; max-width: 620px; margin: 0 auto 14px; }
 .order-done .btn { margin-top: 22px; }
-.drawer-policy { text-align: center; margin-top: 8px; font-size: 14px; }
-.drawer-policy a { color: rgba(0,0,0,.55); text-decoration: underline; text-underline-offset: 3px; }
 .cart-page h1 { font-size: 30px; margin-bottom: 26px; text-align: center; }
 .cart-view { max-width: 620px; margin: 0 auto; }
 .cart-view-body ul { list-style: none; display: grid; gap: 12px; }

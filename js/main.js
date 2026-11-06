@@ -78,7 +78,7 @@
 
   const footer = document.createElement("footer");
   footer.className = "site-footer";
-  footer.innerHTML = `<p>Copyright © ${new Date().getFullYear()} by Bill Lin${page === "shop" ? ` · <a href="returns.html">Returns &amp; Refunds</a>` : ""}</p>`;
+  footer.innerHTML = `<p>Copyright © ${new Date().getFullYear()} by Bill Lin</p>`;
   // The copyright sits at the bottom of the page's last section (over its photo or colour), not in a band of its own.
   const lastSection = document.querySelector("main") && document.querySelector("main").lastElementChild;
   if (lastSection) {
@@ -422,8 +422,7 @@
       <p class="drawer-ship">${icons.truck}${esc(SHIPPING_NOTE)}</p>
       <button class="drawer-checkout" type="button">Checkout</button>
       <p class="drawer-note" role="status">${failed ? "Your payment didn't go through. Please try again." : ""}</p>
-      <p class="drawer-secure">${icons.lock}Secure checkout · PayPal and cards accepted</p>
-      <p class="drawer-policy"><a href="returns.html">Returns &amp; refunds</a></p>`;
+      <p class="drawer-secure">${icons.lock}Secure checkout · PayPal and cards accepted</p>`;
     return { body, foot };
   }
 

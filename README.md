@@ -36,7 +36,7 @@
 
 `PAYPAL_ENV` 設成 `sandbox`、Prodigi 用 `sandbox_` 金鑰。PayPal 開發者後台的 Sandbox → Accounts 會有一個測試用的買家帳號，用它在網站上下單付款，之後可以在 Prodigi 的測試後台看到這筆訂單。測試模式不會真的扣款，也不會真的印刷。
 
-### 退貨退款（規則寫在 `returns.html`）
+### 退貨退款
 
 - 損壞、印刷瑕疵、寄錯：客人到貨 30 天內附照片聯絡 → 免費重印（到 Prodigi 後台對那筆訂單申請 reprint，Prodigi 自己的品質問題不收費），或在 PayPal 全額退款。不用寄回。
 - 遺失：寄出 30 天未到或物流停止更新 → 重印或退款。
@@ -67,7 +67,6 @@ blog.html                Blog 列表
 autumn-in-boston.html    文章
 shop.html                商店
 transient-serenity.html  商品頁（另有 boston-public-library、fenway-park、tow-zone 和兩張 -postcard）
-returns.html             退貨退款規則
 cart.html                購物車
 order-success.html       付款完成頁
 404.html                 找不到頁面
