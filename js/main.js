@@ -302,6 +302,15 @@
         b.addEventListener("click", (e) => { e.stopPropagation(); step(d); });
         fig.append(b);
       });
+      // keyboard ← → (not while typing, and not when the enlarged view or cart is open — those handle keys themselves)
+      document.addEventListener("keydown", (e) => {
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+        if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+        if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable]")) return;
+        if (document.querySelector(".lightbox.open, .drawer.open, .mobile-menu.open")) return;
+        e.preventDefault();
+        step(e.key === "ArrowRight" ? 1 : -1);
+      });
     }
     // swipe the main picture on touch screens
     let x0 = null;
