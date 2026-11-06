@@ -21,7 +21,7 @@ ROOMS = [
         file="room0.jpg",
         erase=[[(30, 745), (1045, 695), (1045, 1310), (30, 1310)]], donor=(1060, 760, 1420, 1320),
         plane_rect=(2.0, 1.0), plane_quad=[(71, 790), (928, 741), (928, 1240), (73, 1248)],
-        hang=dict(cx=1.0, cy=0.52, maxw=2.15, maxh=1.2), frame="black", light=(1, 0.4)),
+        hang=dict(cx=1.0, cy=0.52, maxw=2.15, maxh=1.2), frame="black-mat", light=(1, 0.4)),
     dict(  # white living room, yellow armchair, black frame + mat
         file="room1.jpg",
         erase=[[(1160, 372), (1684, 372), (1684, 1078), (1160, 1078)]], donor=(700, 700, 1140, 1120),
@@ -36,7 +36,7 @@ ROOMS = [
         file="room3.jpg",
         erase=[],
         plane_rect=(1717, 2576), plane_quad=[(0, 0), (1717, 0), (1717, 2576), (0, 2576)],
-        hang=dict(cx=900, cy=800, maxw=1150, maxh=900), frame="black", light=(1, 0.5)),
+        hang=dict(cx=900, cy=800, maxw=1150, maxh=900), frame="black-mat", light=(1, 0.5)),
 ]
 
 def _pushpull(img, known):
