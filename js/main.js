@@ -300,7 +300,7 @@
   document.querySelectorAll(".product-gallery").forEach((g) => {
     const main = g.querySelector(".pg-main img");
     const all = [...g.querySelectorAll(".pg-thumb")];
-    // Room views carry data-material ("Canvas Print" / "Framed Print"); only the chosen material's views are shown.
+    // Room views carry data-material ("Canvas" / "Framed Print"); only the chosen material's views are shown.
     const shown = () => all.filter((t) => !t.hidden);
     const pick = (t) => {
       all.forEach((x) => { x.classList.toggle("active", x === t); x.toggleAttribute("aria-current", x === t); });
@@ -309,7 +309,7 @@
     };
     const step = (d) => { const s = shown(); const i = s.findIndex((t) => t.classList.contains("active")); pick(s[(i + d + s.length) % s.length]); };
     all.forEach((t) => t.addEventListener("click", () => pick(t)));
-    // called by the option buttons with the current choice ({ "Material": "Canvas Print", "Size": "16 × 24 in" }):
+    // called by the option buttons with the current choice ({ "Material": "Canvas", "Size": "16 × 24 in" }):
     // show only the room views for that material and size (data-material / data-size), and, when `jump`,
     // show the same room as before at the new choice (or the first room when the plain print was showing).
     g._choose = (choice, jump) => {
@@ -534,7 +534,7 @@
 
     // Option groups in the HTML: <div class="options" aria-label="Material|Size"> with <button data-value …>.
     // A button's price is data-price, or data-prices='{"<value of another group>": price}' when it depends on that choice.
-    // The cart variant is the chosen values joined with " / " (e.g. "Canvas Print / 16 × 24 in"), as in the server catalog.
+    // The cart variant is the chosen values joined with " / " (e.g. "Canvas / 16 × 24 in"), as in the server catalog.
     const groups = [...wrap.querySelectorAll(".options")].map((g) => ({
       name: g.getAttribute("aria-label"),
       values: [...g.querySelectorAll("[data-value]")].map((b) => ({

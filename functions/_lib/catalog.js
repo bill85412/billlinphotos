@@ -29,7 +29,7 @@ const SIZES = {
 };
 const PRINT = {};
 for (const [size, s] of Object.entries(SIZES)) {
-  PRINT[`Canvas Print / ${size}`] = { price: s.canvas, sku: `GLOBAL-CAN-${s.code}` };
+  PRINT[`Canvas / ${size}`] = { price: s.canvas, sku: `GLOBAL-CAN-${s.code}` };
   PRINT[`Framed Print / ${size}`] = { price: s.framed, sku: `GLOBAL-CFPM-${s.code}` };
 }
 // TODO before going live: replace with the real Prodigi postcard SKU from the Prodigi product catalog.

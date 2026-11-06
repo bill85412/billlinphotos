@@ -44,9 +44,9 @@ const post = (url, body, headers = {}) => new Request(url, { method: "POST", bod
 
 // ---- checkout (whole cart) ----
 let r = await checkout({ request: post("https://billlinphotos.com/api/checkout", { items: [
-  { slug: "transient-serenity", variant: "Canvas Print / 16 × 24 in", quantity: 2 },
+  { slug: "transient-serenity", variant: "Canvas / 16 × 24 in", quantity: 2 },
   { slug: "transient-serenity", variant: "Framed Print / 16 × 24 in", quantity: 1 },
-  { slug: "transient-serenity", variant: "Canvas Print / 16 × 24 in", quantity: 1 },
+  { slug: "transient-serenity", variant: "Canvas / 16 × 24 in", quantity: 1 },
 ] }), env });
 assert.equal(r.status, 200);
 assert.equal((await r.json()).url, "https://www.sandbox.paypal.com/checkoutnow?token=ORD1");
@@ -54,8 +54,8 @@ const created = JSON.parse(calls.find((c) => c.url === `${SB}/v2/checkout/orders
 const pu = created.purchase_units[0];
 assert.equal(created.intent, "CAPTURE");
 assert.equal(pu.items.length, 2, "repeated lines are merged");
-assert.equal(pu.items[0].sku, "transient-serenity|Canvas Print / 16 × 24 in");
-assert.equal(pu.items[0].name, "“Transient Serenity” — Canvas Print / 16 × 24 in");
+assert.equal(pu.items[0].sku, "transient-serenity|Canvas / 16 × 24 in");
+assert.equal(pu.items[0].name, "“Transient Serenity” — Canvas / 16 × 24 in");
 assert.equal(pu.items[0].quantity, "3");
 assert.equal(pu.items[0].unit_amount.value, "100.00");
 assert.equal(pu.items[1].sku, "transient-serenity|Framed Print / 16 × 24 in");
@@ -69,11 +69,11 @@ console.log("✓ checkout turns the whole cart into one PayPal order, priced fro
 
 r = await checkout({ request: post("https://x/api/checkout", { items: [{ slug: "transient-serenity", variant: "Gold Print", quantity: 1 }] }), env });
 assert.equal(r.status, 404);
-r = await checkout({ request: post("https://x/api/checkout", { items: [{ slug: "transient-serenity", variant: "Canvas Print / 16 × 24 in", quantity: 50 }] }), env });
+r = await checkout({ request: post("https://x/api/checkout", { items: [{ slug: "transient-serenity", variant: "Canvas / 16 × 24 in", quantity: 50 }] }), env });
 assert.equal(r.status, 400);
 r = await checkout({ request: post("https://x/api/checkout", { items: [] }), env });
 assert.equal(r.status, 400);
-r = await checkout({ request: post("https://x/api/checkout", { items: [{ slug: "transient-serenity", variant: "Canvas Print / 16 × 24 in", quantity: 1 }] }), env: {} });
+r = await checkout({ request: post("https://x/api/checkout", { items: [{ slug: "transient-serenity", variant: "Canvas / 16 × 24 in", quantity: 1 }] }), env: {} });
 assert.equal(r.status, 503);
 console.log("✓ checkout rejects unknown options, silly quantities, empty carts, and missing PayPal keys");
 
@@ -98,7 +98,7 @@ paypalOrder = {
     reference_id: "cart",
     items: [
       { name: "Transient Serenity — Framed Print", sku: "transient-serenity|Framed Print / 16 × 24 in", quantity: "1" },
-      { name: "Transient Serenity — Canvas Print", sku: "transient-serenity|Canvas Print / 16 × 24 in", quantity: "2" },
+      { name: "Transient Serenity — Canvas", sku: "transient-serenity|Canvas / 16 × 24 in", quantity: "2" },
     ],
     shipping: { name: { full_name: "Ann Buyer" }, address: { address_line_1: "1 Main St", admin_area_2: "Boston", admin_area_1: "MA", postal_code: "02116", country_code: "US" } },
   }],
