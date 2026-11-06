@@ -154,7 +154,10 @@ def art_physical(photo, w_in, h_in, as_canvas, side=1):
         u = ppi * 0.45 / 2.2  # canvas() draws a 2.2u side: 0.45 in visible of a 0.75 in (19 mm) slim bar
         img, a = canvas(p, u, side)
         return img, a, img.shape[1] / ppi, img.shape[0] / ppi
-    mat_in, fw_in = (1.5 if max(w_in, h_in) <= 18 else 2.0), 0.75
+    # Prodigi: the stated size is the glaze opening; frames 12x16" and up get a 2" mount (1.5" up to 11x14").
+    # The mount is cut from 1.4 mm board, so its bevel shows as a thin bright line round the photo.
+    mat_in = 2.0 if max(w_in, h_in) >= 16 else 1.5
+    fw_in = 0.75
     fw, mat = round(fw_in * ppi), round(mat_in * ppi)
     win_w, win_h = round((w_in - 2 * mat_in) * ppi), round((h_in - 2 * mat_in) * ppi)
     ar = photo.shape[1] / photo.shape[0]
@@ -165,9 +168,12 @@ def art_physical(photo, w_in, h_in, as_canvas, side=1):
     img[fw:H - fw, fw:W - fw] = (236, 240, 241)
     ox, oy = (W - pw) // 2, (H - ph) // 2
     # bevel-cut mat: a thin bright edge round the window, and a soft shadow under the frame lip
-    bev = max(2, round(0.09 * ppi))
-    img[oy - bev:oy + ph + bev, ox - bev:ox + pw + bev] = (248, 250, 250)
+    bev = max(1, round(0.055 * ppi))  # 1.4 mm bevel
+    img[oy - bev:oy + ph + bev, ox - bev:ox + pw + bev] = (250, 252, 252)
     img[oy:oy + ph, ox:ox + pw] = p
+    # the thin board lifts the mount off the print: a faint shadow just inside the top/left of the window
+    sh = np.zeros((H, W), np.float32); sh[oy:oy + max(1, bev), ox:ox + pw] = 1; sh[oy:oy + ph, ox:ox + max(1, bev)] = 1
+    img *= (1 - 0.18 * cv2.GaussianBlur(sh, (0, 0), max(0.8, bev * 0.8))[..., None])
     m = np.ones((H, W), np.float32); m[fw:H - fw, fw:W - fw] = 0
     inner = cv2.GaussianBlur(m, (0, 0), max(1.5, fw * 0.6)) * (1 - m)
     img *= (1 - 0.35 * inner[..., None])
