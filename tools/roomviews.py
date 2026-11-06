@@ -21,7 +21,7 @@ ROOMS = [
         file="room0.jpg",
         erase=[[(30, 745), (1045, 695), (1045, 1310), (30, 1310)]], donor=(1060, 760, 1420, 1320),
         plane_rect=(2.0, 1.0), plane_quad=[(71, 790), (928, 741), (928, 1240), (73, 1248)],
-        hang=dict(cx=1.0, cy=0.52, maxw=2.15, maxh=1.2), frame="walnut", light=(1, 0.4)),
+        hang=dict(cx=1.0, cy=0.52, maxw=2.15, maxh=1.2), frame="black", light=(1, 0.4)),
     dict(  # white living room, yellow armchair, black frame + mat
         file="room1.jpg",
         erase=[[(1160, 372), (1684, 372), (1684, 1078), (1160, 1078)]], donor=(700, 700, 1140, 1120),
@@ -31,7 +31,7 @@ ROOMS = [
         file="room2.jpg",
         erase=[[(612, 568), (1440, 500), (1440, 1045), (612, 1045)]], donor=(650, 1060, 1350, 1235),
         plane_rect=(0.714, 1.0), plane_quad=[(1013, 559), (1379, 524), (1374, 1017), (1011, 1021)],
-        hang=dict(cx=-0.33, cy=0.5, maxw=1.6, maxh=1.2), frame="oak-mat", light=(1, 0.35)),
+        hang=dict(cx=-0.33, cy=0.5, maxw=1.6, maxh=1.2), frame="black-mat", light=(1, 0.35)),
     dict(  # empty white wall, bentwood chair, thin black frame
         file="room3.jpg",
         erase=[],
