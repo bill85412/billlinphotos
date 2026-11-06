@@ -184,19 +184,22 @@ if (ROOT) {
     // every combination of the page's option buttons must be a catalog variant with the same price
     const groups = [...html.matchAll(/<div class="options"[^>]*>([\s\S]*?)<\/div>/g)].map((g) =>
       [...g[1].matchAll(/data-value="([^"]+)"(?: data-price="([^"]+)")?(?: data-prices='([^']+)')?/g)].map(([, value, price, prices]) => ({ value, price, prices: prices && JSON.parse(prices) })));
+    let offered = 0;
     const combos = groups.reduce((acc, g) => acc.flatMap((c) => g.map((v) => [...c, v])), [[]]);
     for (const c of combos) {
       const key = c.map((v) => v.value).join(" / ");
       const v = PRODUCTS[handle].variants[key];
-      assert.ok(v, `${f}: option ${key} missing from the catalog`);
       let price = null;
       for (const o of c) {
         if (o.prices) { const other = c.find((x) => x !== o && o.prices[x.value] != null); if (other) { price = o.prices[other.value]; break; } }
         else if (o.price != null) { price = parseFloat(o.price); break; }
       }
+      if (price == null) { assert.ok(!v, `${f}: ${key} is in the catalog but the page offers it without a price`); continue; }
+      assert.ok(v, `${f}: option ${key} missing from the catalog`);
       assert.equal(v.price, Math.round(price * 100), `${f}: ${key} price differs from the catalog`);
+      offered++;
     }
-    assert.equal(combos.length, Object.keys(PRODUCTS[handle].variants).length, `${f}: page and catalog have different option sets`);
+    assert.equal(offered, Object.keys(PRODUCTS[handle].variants).length, `${f}: page and catalog have different option sets`);
   }
   console.log("✓ every product page's options and prices match the server catalog");
 }

@@ -558,7 +558,8 @@
           <p class="opt-label">${esc(g.name)}</p>
           <div class="options" role="radiogroup" aria-label="${esc(g.name)}">${g.values.map((v) => {
             const p = priceOf(sel.map((s, i) => (i === gi ? v : s)));
-            return `<button type="button" role="radio" aria-checked="${sel[gi] === v}" data-g="${gi}" data-value="${esc(v.value)}"><span>${esc(v.value)}</span>${p != null ? `<small>${usd(p)}</small>` : ""}</button>`;
+            const na = p == null && gi > 0; // the first group (Material) always stays clickable; picking it moves the size if needed
+            return `<button type="button" role="radio" aria-checked="${sel[gi] === v}" data-g="${gi}" data-value="${esc(v.value)}"${na ? ' disabled class="unavailable"' : ""}><span>${esc(v.value)}</span>${p != null ? `<small>${usd(p)}</small>` : na ? "<small>Not available</small>" : ""}</button>`;
           }).join("")}</div></div>`).join("");
       const p = priceOf(sel);
       priceEl.textContent = p != null ? usd(p) : "";
@@ -570,6 +571,12 @@
       const gi = +b.dataset.g, g = groups[gi];
       const before = sel[gi];
       sel[gi] = g.values.find((v) => v.value === b.dataset.value) || sel[gi];
+      // the new choice may not exist (e.g. no framed 24 × 36): move the other groups to the nearest option that does
+      groups.forEach((og, oi) => {
+        if (oi === gi || priceOf(sel) != null) return;
+        const ok = og.values.filter((v) => priceOf(sel.map((s2, i) => (i === oi ? v : s2))) != null);
+        if (ok.length) sel[oi] = ok[ok.length - 1];
+      });
       note.textContent = "";
       render();
       if (gal && gal._choose && sel[gi] !== before) gal._choose(choice(), true);

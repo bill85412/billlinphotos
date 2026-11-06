@@ -32,6 +32,12 @@ for (const [size, s] of Object.entries(SIZES)) {
   PRINT[`Canvas / ${size}`] = { price: s.canvas, sku: `GLOBAL-CAN-${s.code}` };
   PRINT[`Framed Print / ${size}`] = { price: s.framed, sku: `GLOBAL-CFPM-${s.code}` };
 }
+// Boston Public Library: framed 12 × 18 $250 and 16 × 24 $300; no framed 24 × 36 (owner's choice).
+const BPL_PRINT = { ...PRINT };
+BPL_PRINT["Framed Print / 12 × 18 in"] = { ...PRINT["Framed Print / 12 × 18 in"], price: 25000 };
+BPL_PRINT["Framed Print / 16 × 24 in"] = { ...PRINT["Framed Print / 16 × 24 in"], price: 30000 };
+delete BPL_PRINT["Framed Print / 24 × 36 in"];
+
 // TODO before going live: replace with the real Prodigi postcard SKU from the Prodigi product catalog.
 const POSTCARD = {
   "4 × 6 in": { price: 500, sku: "CHECK-PRODIGI-POSTCARD-SKU" },
@@ -39,7 +45,7 @@ const POSTCARD = {
 
 export const PRODUCTS = {
   "transient-serenity":    { title: "“Transient Serenity”",    printFile: "r2:transient-serenity.jpg",    variants: PRINT },
-  "boston-public-library": { title: "“Boston Public Library”", printFile: "r2:boston-public-library.jpg", variants: PRINT },
+  "boston-public-library": { title: "“Boston Public Library”", printFile: "r2:boston-public-library.jpg", variants: BPL_PRINT },
   "fenway-park":           { title: "“Fenway Park”",           printFile: "r2:fenway-park.jpg",           variants: PRINT },
   "tow-zone":              { title: "“Tow Zone”",              printFile: "r2:tow-zone.jpg",              variants: PRINT },
   "boston-public-library-postcard": { title: "“Boston Public Library” Postcard", printFile: "r2:boston-public-library.jpg", variants: POSTCARD },
