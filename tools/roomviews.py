@@ -10,7 +10,10 @@ Writes images/mockups/HANDLE-N.jpg (long edge 2000) and images/mockups/sm/HANDLE
 
     python3 tools/roomviews.py images/NAME.jpg HANDLE --canvas
 
-draws a gallery-wrapped stretched canvas instead (no frame; the wrapped side edge shows on the side the camera
+--size=16x24 (or --all-sizes for 12x18, 16x24, 24x36) draws the piece at its real size against each room's
+scale (upi = wall units per inch, calibrated from the furniture) and writes HANDLE[-canvas]-16x24-N.jpg.
+
+--canvas draws a gallery-wrapped canvas instead (no frame; the wrapped side edge shows on the side the camera
 sees, deeper shadow, canvas weave) and writes images/mockups/HANDLE-canvas-N.jpg.
 """
 import sys, pathlib, numpy as np, cv2
@@ -18,25 +21,25 @@ import sys, pathlib, numpy as np, cv2
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 ROOMS = [
     dict(  # warm living room, sectional sofa, walnut floater frame on a canvas
-        file="room0.jpg",
+        file="room0.jpg", upi=1/25, top=-0.6, bottom=1.15,  # scale: sofa back ~30 in tall
         erase=[[(30, 745), (1045, 695), (1045, 1310), (30, 1310)]], donor=(1060, 760, 1420, 1320),
         plane_rect=(2.0, 1.0), plane_quad=[(71, 790), (928, 741), (928, 1240), (73, 1248)],
         hang=dict(cx=1.0, cy=0.52, maxw=2.15, maxh=1.2), frame="black-mat", light=(1, 0.4)),
     dict(  # white living room, yellow armchair, black frame + mat
-        file="room1.jpg",
+        file="room1.jpg", upi=19.5, top=-350, bottom=390,  # scale: armchair ~32 in tall; old frame ~A1. bottom: keep above the vase of branches
         erase=[[(1160, 372), (1684, 372), (1684, 1078), (1160, 1078)]], donor=(700, 700, 1140, 1120),
         plane_rect=(480, 662), plane_quad=[(1181, 393), (1661, 393), (1661, 1055), (1181, 1055)],
         hang=dict(cx=240, cy=330, maxw=640, maxh=700), frame="black-mat", light=(1, 0.3)),
     dict(  # bright apartment, grey sofa, two oak frames -> one oak frame + mat
-        file="room2.jpg",
+        file="room2.jpg", upi=1/28, top=-0.9, bottom=1.35,  # scale: sofa ~83 in wide
         erase=[[(612, 568), (1440, 500), (1440, 1045), (612, 1045)]], donor=(650, 1060, 1350, 1235),
         plane_rect=(0.714, 1.0), plane_quad=[(1013, 559), (1379, 524), (1374, 1017), (1011, 1021)],
         hang=dict(cx=-0.33, cy=0.5, maxw=1.6, maxh=1.2), frame="black-mat", light=(1, 0.35)),
     dict(  # empty white wall, bentwood chair, thin black frame
-        file="room3.jpg",
+        file="room3.jpg", upi=36.6, top=60, bottom=940,  # scale: bentwood chair seat ~18 in high
         erase=[],
         plane_rect=(1717, 2576), plane_quad=[(0, 0), (1717, 0), (1717, 2576), (0, 2576)],
-        hang=dict(cx=900, cy=800, maxw=1150, maxh=900), frame="black-mat", light=(1, 0.5)),
+        hang=dict(cx=1000, cy=800, maxw=1150, maxh=900), frame="black-mat", light=(1, 0.5)),
 ]
 
 def _pushpull(img, known):
@@ -141,7 +144,40 @@ def framed(photo, style, long_px, side=1):
     img[fw:H - fw, fw:W - fw] += sheen[fw:H - fw, fw:W - fw, None]
     return np.clip(img, 0, 255), np.ones((H, W), np.float32)
 
-def render(photo_path, handle, as_canvas=False):
+
+def art_physical(photo, w_in, h_in, as_canvas, side=1):
+    """The print at its real size: w_in x h_in inches (framed: the area inside the frame, white mat included;
+    canvas: the face). Returns (BGR, alpha, width_in, height_in) of the whole piece as hung."""
+    ppi = 1500 / max(w_in, h_in)
+    if as_canvas:
+        p = cv2.resize(photo, (round(w_in * ppi), round(h_in * ppi)), interpolation=cv2.INTER_AREA).astype(np.float32)
+        u = ppi * 0.45 / 2.2  # canvas() draws a 2.2u side: 0.45 in visible of a 0.75 in (19 mm) slim bar
+        img, a = canvas(p, u, side)
+        return img, a, img.shape[1] / ppi, img.shape[0] / ppi
+    mat_in, fw_in = (1.5 if max(w_in, h_in) <= 18 else 2.0), 0.75
+    fw, mat = round(fw_in * ppi), round(mat_in * ppi)
+    win_w, win_h = round((w_in - 2 * mat_in) * ppi), round((h_in - 2 * mat_in) * ppi)
+    ar = photo.shape[1] / photo.shape[0]
+    pw, ph = (win_w, round(win_w / ar)) if win_w / win_h < ar else (round(win_h * ar), win_h)
+    p = cv2.resize(photo, (pw, ph), interpolation=cv2.INTER_AREA).astype(np.float32)
+    W, H = round(w_in * ppi) + 2 * fw, round(h_in * ppi) + 2 * fw
+    img = np.zeros((H, W, 3), np.float32); img[:] = (24, 24, 24)
+    img[fw:H - fw, fw:W - fw] = (236, 240, 241)
+    ox, oy = (W - pw) // 2, (H - ph) // 2
+    # bevel-cut mat: a thin bright edge round the window, and a soft shadow under the frame lip
+    bev = max(2, round(0.09 * ppi))
+    img[oy - bev:oy + ph + bev, ox - bev:ox + pw + bev] = (248, 250, 250)
+    img[oy:oy + ph, ox:ox + pw] = p
+    m = np.ones((H, W), np.float32); m[fw:H - fw, fw:W - fw] = 0
+    inner = cv2.GaussianBlur(m, (0, 0), max(1.5, fw * 0.6)) * (1 - m)
+    img *= (1 - 0.35 * inner[..., None])
+    hl = np.zeros((H, W), np.float32); hl[:max(1, fw // 3), :] = 1; hl[:, :max(1, fw // 3)] = 1
+    img += 28 * cv2.GaussianBlur(hl, (0, 0), 1)[..., None] * m[..., None]
+    yy, xx = np.mgrid[0:H, 0:W]; sheen = np.clip(1 - np.abs((xx / W + yy / H) - 0.7) * 3, 0, 1) * 10
+    img[fw:H - fw, fw:W - fw] += sheen[fw:H - fw, fw:W - fw, None]
+    return np.clip(img, 0, 255), np.ones((H, W), np.float32), W / ppi, H / ppi
+
+def render(photo_path, handle, as_canvas=False, size=None):
     photo = cv2.imread(str(photo_path)); ar = photo.shape[1] / photo.shape[0]
     outdir = ROOT / "images/mockups"; (outdir / "sm").mkdir(parents=True, exist_ok=True)
     for i, R in enumerate(ROOMS, 1):
@@ -154,13 +190,24 @@ def render(photo_path, handle, as_canvas=False):
         if h > g["maxh"]: h = g["maxh"]; w = h * ar
         q = np.float32(R["plane_quad"])  # which side of a protruding canvas the camera sees
         side = -1 if np.linalg.norm(q[3] - q[0]) > np.linalg.norm(q[2] - q[1]) * 1.01 else 1
-        art, alpha = framed(photo, "canvas" if as_canvas else R["frame"], 1400, side)
-        AH, AW = art.shape[:2]
-        # frame adds a border: keep the *framed* piece inside the box
-        k = min(g["maxw"] / AW, g["maxh"] / AH) if (AW / AH) else 1
-        if as_canvas and "mat" in R["frame"]: k *= 0.8  # a canvas has no mat: keep it about the same size as the print inside the mat
-        w, h = AW * k, AH * k
-        x0, y0 = g["cx"] - w / 2, g["cy"] - h / 2
+        if size:  # true-to-scale: size = (short_in, long_in), turned to the photo's orientation
+            w_in, h_in = (size[1], size[0]) if ar >= 1 else (size[0], size[1])
+            art, alpha, AWin, AHin = art_physical(photo, w_in, h_in, as_canvas, side)
+            AH, AW = art.shape[:2]
+            k = AWin * R["upi"] / AW
+            w, h = AW * k, AH * k
+            cx, cy = g["cx"], g["cy"]
+            cy = min(cy, R["bottom"] - h / 2)     # stay clear of the furniture below
+            cy = max(cy, R["top"] + h / 2)        # but never through the ceiling / top of the photo
+            x0, y0 = cx - w / 2, cy - h / 2
+        else:
+            art, alpha = framed(photo, "canvas" if as_canvas else R["frame"], 1400, side)
+            AH, AW = art.shape[:2]
+            # frame adds a border: keep the *framed* piece inside the box
+            k = min(g["maxw"] / AW, g["maxh"] / AH) if (AW / AH) else 1
+            if as_canvas and "mat" in R["frame"]: k *= 0.8  # a canvas has no mat: keep it about the same size as the print inside the mat
+            w, h = AW * k, AH * k
+            x0, y0 = g["cx"] - w / 2, g["cy"] - h / 2
         src = np.float32([(0, 0), (AW, 0), (AW, AH), (0, AH)])
         dst_wall = np.float32([(x0, y0), (x0 + w, y0), (x0 + w, y0 + h), (x0, y0 + h)])
         dst = cv2.perspectiveTransform(dst_wall[None], Hm)[0]
@@ -187,11 +234,16 @@ def render(photo_path, handle, as_canvas=False):
         out = cv2.GaussianBlur(out, (0, 0), 0.6) * 0.5 + out * 0.5  # match camera softness
         out = np.clip(out, 0, 255).astype(np.uint8)
         s = 2000 / max(out.shape[:2]); big = cv2.resize(out, None, fx=s, fy=s, interpolation=cv2.INTER_AREA)
-        name = f"{handle}-canvas-{i}" if as_canvas else f"{handle}-{i}"
+        tag = f"-{size[0]}x{size[1]}" if size else ""
+        name = f"{handle}-canvas{tag}-{i}" if as_canvas else f"{handle}{tag}-{i}"
         cv2.imwrite(str(outdir / f"{name}.jpg"), big, [cv2.IMWRITE_JPEG_QUALITY, 88, cv2.IMWRITE_JPEG_PROGRESSIVE, 1])
         sm = cv2.resize(out, None, fx=1000 / max(out.shape[:2]), fy=1000 / max(out.shape[:2]), interpolation=cv2.INTER_AREA)
         cv2.imwrite(str(outdir / "sm" / f"{name}.jpg"), sm, [cv2.IMWRITE_JPEG_QUALITY, 85, cv2.IMWRITE_JPEG_PROGRESSIVE, 1])
         print("wrote", outdir / f"{name}.jpg", big.shape[1], "x", big.shape[0])
 
 if __name__ == "__main__":
-    render(ROOT / sys.argv[1], sys.argv[2], "--canvas" in sys.argv[3:])
+    args = sys.argv[3:]
+    sizes = [tuple(int(v) for v in a.split("=")[1].split("x")) for a in args if a.startswith("--size=")]
+    if "--all-sizes" in args: sizes = [(12, 18), (16, 24), (24, 36)]
+    for sz in sizes or [None]:
+        render(ROOT / sys.argv[1], sys.argv[2], "--canvas" in args, sz)

@@ -309,13 +309,18 @@
     };
     const step = (d) => { const s = shown(); const i = s.findIndex((t) => t.classList.contains("active")); pick(s[(i + d + s.length) % s.length]); };
     all.forEach((t) => t.addEventListener("click", () => pick(t)));
-    // called by the option buttons: show that material's room views and jump to the first one
-    g._material = (m, jump) => {
-      if (!all.some((t) => t.dataset.material)) return;
-      all.forEach((t) => { t.hidden = !!t.dataset.material && t.dataset.material !== m; });
-      const first = all.find((t) => t.dataset.material === m);
-      if (jump && first) pick(first);
-      else if (all.find((t) => t.classList.contains("active")).hidden) pick(all[0]);
+    // called by the option buttons with the current choice ({ "Material": "Canvas Print", "Size": "16 × 24 in" }):
+    // show only the room views for that material and size (data-material / data-size), and, when `jump`,
+    // show the same room as before at the new choice (or the first room when the plain print was showing).
+    g._choose = (choice, jump) => {
+      if (!all.some((t) => t.dataset.material || t.dataset.size)) return;
+      const fits = (t) => (!t.dataset.material || t.dataset.material === choice.Material) && (!t.dataset.size || t.dataset.size === choice.Size);
+      const cur = all.find((t) => t.classList.contains("active"));
+      all.forEach((t) => { t.hidden = !fits(t); });
+      const room = cur && cur.dataset.room || "1";
+      const target = all.find((t) => !t.hidden && t.dataset.room === room) || all.find((t) => !t.hidden && t.dataset.room);
+      if (jump && target) pick(target);
+      else if (cur && cur.hidden) pick(all[0]);
     };
     // ‹ › arrows on the main picture
     if (all.length > 1) {
@@ -559,19 +564,19 @@
       priceEl.textContent = p != null ? usd(p) : "";
       add.disabled = p == null;
     };
-    const material = () => (sel[groups.findIndex((g) => /material/i.test(g.name))] || {}).value;
+    const choice = () => Object.fromEntries(groups.map((g, i) => [g.name, sel[i].value]));
     wrap.addEventListener("click", (e) => {
       const b = e.target.closest("[data-value]"); if (!b) return;
       const gi = +b.dataset.g, g = groups[gi];
-      const before = material();
+      const before = sel[gi];
       sel[gi] = g.values.find((v) => v.value === b.dataset.value) || sel[gi];
       note.textContent = "";
       render();
-      if (gal && gal._material && material() !== before) gal._material(material(), true);
+      if (gal && gal._choose && sel[gi] !== before) gal._choose(choice(), true);
     });
     render();
     const gal = document.querySelector(".product-gallery");
-    if (gal && gal._material && material()) gal._material(material(), false);
+    if (gal && gal._choose && groups.length) gal._choose(choice(), false);
 
     add.onclick = () => {
       const price = priceOf(sel);
