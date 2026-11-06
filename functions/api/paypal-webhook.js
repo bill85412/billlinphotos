@@ -60,6 +60,8 @@ export async function fulfil(env, orderId, origin) {
     recipient: {
       name: ship.name?.full_name || [payer.name?.given_name, payer.name?.surname].filter(Boolean).join(" "),
       email: payer.email_address || undefined,
+      // The courier uses this for delivery questions; PayPal includes it when the buyer gives one.
+      phoneNumber: phoneOf(ship.phone_number) || phoneOf(payer.phone?.phone_number) || undefined,
       address: {
         line1: a.address_line_1,
         line2: a.address_line_2 || undefined,
@@ -92,4 +94,10 @@ function printFileUrl(env, printFile, origin) {
     return `${site}/api/print-file/${encodeURIComponent(printFile.slice(3))}?token=${encodeURIComponent(env.PRINT_FILE_TOKEN || "")}`;
   }
   return printFile;
+}
+
+// PayPal phone objects: { country_code: "1", national_number: "6175550100" } (country code not always present).
+function phoneOf(p) {
+  if (!p?.national_number) return "";
+  return (p.country_code ? `+${p.country_code} ` : "") + p.national_number;
 }

@@ -92,7 +92,7 @@ console.log("✓ returning from PayPal captures the payment; a declined card goe
 // ---- webhook → Prodigi ----
 paypalOrder = {
   id: "ORD1", status: "COMPLETED",
-  payer: { email_address: "buyer@example.com", name: { given_name: "Ann", surname: "Buyer" } },
+  payer: { email_address: "buyer@example.com", name: { given_name: "Ann", surname: "Buyer" }, phone: { phone_number: { national_number: "6175550100" } } },
   purchase_units: [{
     reference_id: "cart",
     items: [
@@ -125,6 +125,8 @@ assert.equal(order.items[0].assets[0].url, "https://billlinphotos.com/api/print-
 assert.equal(order.recipient.name, "Ann Buyer");
 assert.equal(order.recipient.address.townOrCity, "Boston");
 assert.equal(order.recipient.address.countryCode, "US");
+assert.equal(order.recipient.email, "buyer@example.com");
+assert.equal(order.recipient.phoneNumber, "6175550100");
 assert.ok(bucket.store.has("orders/ORD1.json"));
 console.log("✓ a captured PayPal payment becomes one Prodigi order with every cart item, the address and print files");
 
