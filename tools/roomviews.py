@@ -82,8 +82,10 @@ def fill_wall(img, quads, donor=None):
     soft = cv2.GaussianBlur(grow.astype(np.float32) / 255, (0, 0), 3)[..., None]
     return out * (1 - soft) + filled * soft
 
-def canvas(p, u, side):
-    """Gallery-wrapped canvas: the face plus the wrapped edge on one side and the bottom, as seen at an angle."""
+def canvas(p, u, side, sides=None):
+    """Gallery-wrapped canvas: the face plus the wrapped edge on one side and the bottom, as seen at an angle.
+    sides: optional {"left","right","bottom"} strips of the real image that wraps round the bar (image wrap);
+    without it the edge is mirrored from the face."""
     ph, pw = p.shape[:2]
     ds, db = int(round(2.2 * u)), int(round(1.1 * u))   # visible side depth, bottom depth
     H, W = ph + db, pw + ds
@@ -95,14 +97,19 @@ def canvas(p, u, side):
     img[0:ph, fx:fx + pw] = p + weave[..., None]
     alpha[0:ph, fx:fx + pw] = 1
     # side: the image wraps round the stretcher bar, so it continues the outer columns, in shade
-    edge = p[:, :max(2, ds)][:, ::-1] if side < 0 else p[:, -max(2, ds):][:, ::-1]
+    if sides:  # image wrap: the side shows the band of the photo that was wrapped off the front
+        st = sides["left"] if side < 0 else sides["right"]
+        edge = cv2.resize(st, (max(2, ds), ph), interpolation=cv2.INTER_AREA)
+        edge = edge if side > 0 else edge[:, ::-1]
+    else:
+        edge = p[:, :max(2, ds)][:, ::-1] if side < 0 else p[:, -max(2, ds):][:, ::-1]
     sx = 0 if side < 0 else pw
     for i in range(ds):  # parallelogram: each column slides down a little (perspective)
         off = int(round(db * (i + 1) / ds)) if side > 0 else int(round(db * (ds - i) / ds))
         col = edge[:, min(i, edge.shape[1] - 1)] * 0.62
         img[off:off + ph, sx + i] = col; alpha[off:off + ph, sx + i] = 1
     # bottom edge, darker (lit from above)
-    bot = p[-max(2, db):][::-1] * 0.45
+    bot = (cv2.resize(sides["bottom"], (pw, max(2, db)), interpolation=cv2.INTER_AREA) if sides else p[-max(2, db):][::-1]) * 0.45
     for j in range(db):
         sh = int(round(ds * (j + 1) / db))
         x0 = fx + (sh if side > 0 else -sh)
@@ -150,9 +157,19 @@ def art_physical(photo, w_in, h_in, as_canvas, side=1):
     canvas: the face). Returns (BGR, alpha, width_in, height_in) of the whole piece as hung."""
     ppi = 1500 / max(w_in, h_in)
     if as_canvas:
-        p = cv2.resize(photo, (round(w_in * ppi), round(h_in * ppi)), interpolation=cv2.INTER_AREA).astype(np.float32)
+        # Image wrap (the owner's Prodigi setting): the photo covers face + 0.75 in (19 mm) bar on every side,
+        # so the front loses that band all round and the sides show it.
+        d = round(0.75 * ppi)
+        W2, H2 = round(w_in * ppi) + 2 * d, round(h_in * ppi) + 2 * d
+        ar = photo.shape[1] / photo.shape[0]
+        cw, ch = (W2, round(W2 / ar)) if W2 / H2 > ar else (round(H2 * ar), H2)
+        full = cv2.resize(photo, (cw, ch), interpolation=cv2.INTER_AREA).astype(np.float32)
+        x0, y0 = (cw - W2) // 2, (ch - H2) // 2
+        full = full[y0:y0 + H2, x0:x0 + W2]
+        p = full[d:H2 - d, d:W2 - d]
+        sides = {"left": full[d:H2 - d, :d], "right": full[d:H2 - d, W2 - d:], "bottom": full[H2 - d:, d:W2 - d]}
         u = ppi * 0.45 / 2.2  # canvas() draws a 2.2u side: 0.45 in visible of a 0.75 in (19 mm) slim bar
-        img, a = canvas(p, u, side)
+        img, a = canvas(p, u, side, sides)
         return img, a, img.shape[1] / ppi, img.shape[0] / ppi
     # Prodigi: the stated size is the glaze opening; frames 12x16" and up get a 2" mount (1.5" up to 11x14").
     # The mount is cut from 1.4 mm board, so its bevel shows as a thin bright line round the photo.
