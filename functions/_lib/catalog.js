@@ -21,16 +21,24 @@ export const SHIPPING = { amount: 0, label: "Free shipping" };
 export const PRODIGI_SHIPPING_METHOD = "budget";
 
 // Prints: one variant per Material × Size, keyed "Material / Size" (the product page joins the chosen buttons with " / ").
-// Prices are starting points — check them against the Prodigi cost + shipping for each size before going live.
+// SKUs are the ones the owner set up in the Prodigi dashboard ("Your products" → BPL in Early Morning Canvas / Framed):
+//   Canvas  = Slim canvas, 19 mm bar, standard 400gsm canvas, image wrap
+//   Framed  = Classic frame, black, EMA paper, Snow white 1.4 mm mount, acrylic glaze (Prodigi sizes are metric: 30×45, 40×60 cm)
+// Costs in Prodigi (before shipping): canvas $29.28 / $30.00 / $52.00, framed $101.70 / $119.10.
+//   attributes  sent to Prodigi with the item (exact names/values to confirm with the first sandbox order)
+//   sizing      "fillPrintArea" fills the print area (canvas); "fitPrintArea" never crops the photo (framed, inside the mount)
+const CANVAS_ATTR = { wrap: "ImageWrap" };
+const FRAME_ATTR = { color: "black", mountColor: "snow white" };
 const SIZES = {
-  "12 × 18 in": { canvas: 8000,  framed: 6500,  code: "12X18" },
-  "16 × 24 in": { canvas: 10000, framed: 8000,  code: "16X24" },
-  "24 × 36 in": { canvas: 16000, framed: 14000, code: "24X36" },
+  "12 × 18 in": { canvas: 8000,  framed: 6500,  canvasSku: "CAN-19MM-SC-12X18",    frameSku: "FRA-CLA-EMA-MOUNT1-ACRY-30X45" },
+  "16 × 24 in": { canvas: 10000, framed: 8000,  canvasSku: "GLOBAL-SLIMCAN-16X24", frameSku: "FRA-CLA-EMA-MOUNT1-ACRY-40X60" },
+  // framed 24 × 36: not set up in Prodigi yet (60×90 cm is a guess) — check before selling it
+  "24 × 36 in": { canvas: 16000, framed: 14000, canvasSku: "GLOBAL-SLIMCAN-24X36", frameSku: "FRA-CLA-EMA-MOUNT1-ACRY-60X90" },
 };
 const PRINT = {};
 for (const [size, s] of Object.entries(SIZES)) {
-  PRINT[`Canvas / ${size}`] = { price: s.canvas, sku: `GLOBAL-CAN-${s.code}` };
-  PRINT[`Framed Print / ${size}`] = { price: s.framed, sku: `GLOBAL-CFPM-${s.code}` };
+  PRINT[`Canvas / ${size}`] = { price: s.canvas, sku: s.canvasSku, attributes: CANVAS_ATTR, sizing: "fillPrintArea" };
+  PRINT[`Framed Print / ${size}`] = { price: s.framed, sku: s.frameSku, attributes: FRAME_ATTR, sizing: "fitPrintArea" };
 }
 // Boston Public Library: framed 12 × 18 $250 and 16 × 24 $300; no framed 24 × 36 (owner's choice).
 const BPL_PRINT = { ...PRINT };
@@ -38,9 +46,9 @@ BPL_PRINT["Framed Print / 12 × 18 in"] = { ...PRINT["Framed Print / 12 × 18 in
 BPL_PRINT["Framed Print / 16 × 24 in"] = { ...PRINT["Framed Print / 16 × 24 in"], price: 30000 };
 delete BPL_PRINT["Framed Print / 24 × 36 in"];
 
-// TODO before going live: replace with the real Prodigi postcard SKU from the Prodigi product catalog.
+// Fine art postcard, 6×4" Mohawk 324gsm matte, single, blank back (Prodigi catalogue, cost $0.88 before shipping).
 const POSTCARD = {
-  "4 × 6 in": { price: 500, sku: "CHECK-PRODIGI-POSTCARD-SKU" },
+  "4 × 6 in": { price: 500, sku: "GLOBAL-POST-MOH-6X4-BLA", sizing: "fillPrintArea" },
 };
 
 export const PRODUCTS = {

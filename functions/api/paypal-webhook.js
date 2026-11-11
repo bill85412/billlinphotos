@@ -75,7 +75,8 @@ export async function fulfil(env, orderId, origin) {
       merchantReference: `${l.slug}:${l.variant}`,
       sku: l.found.variant.sku,
       quantity: l.quantity,
-      sizing: "fillPrintArea",
+      sizing: l.found.variant.sizing || "fillPrintArea",
+      ...(l.found.variant.attributes ? { attributes: l.found.variant.attributes } : {}),
       assets: [{ printArea: "default", url: printFileUrl(env, l.found.product.printFile, origin) }],
     })),
   };
