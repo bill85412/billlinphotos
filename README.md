@@ -18,7 +18,7 @@
    測試完成後，切到 **Live** 重做一次，換成正式的 Client ID、Secret 和 Webhook ID。
 2. **Prodigi**：註冊帳號，在後台 Settings 取得 API 金鑰。先用 `sandbox_` 開頭的測試金鑰，確定沒問題再換成 `live_`，並綁定付款卡（印刷費和運費會從這張卡扣）。建議在 Prodigi 設定訂單「暫停期」（例如 2 小時），讓客人有時間取消。
 3. **確認商品編號（SKU）**：在 Prodigi 產品目錄找到要賣的品項和尺寸，填進 `functions/_lib/catalog.js`。目前用畫布 `GLOBAL-SLIMCAN-16X24/24X36` 和裱框 `GLOBAL-CFPM-12X18/16X24`（GLOBAL 開頭 = 由離買家最近的工廠製作）。
-4. **原檔**：在 Cloudflare 後台建立 R2 儲存空間，名稱 `print-files`，上傳要賣的照片原始高解析檔，檔名要跟 `functions/_lib/catalog.js` 的 `printFile` 一樣：`transient-serenity.jpg`、`boston-public-library.jpg`、`fenway-park.jpg`、`tow-zone.jpg`。這些檔案不公開，只有 Prodigi 拿得到。網站也會在這裡的 `orders/` 資料夾記錄已送出的訂單，避免重複下單。
+4. **原檔**：在 Cloudflare 後台建立 R2 儲存空間，名稱 `print-files`，上傳要賣的照片原始高解析檔，檔名要跟 `functions/_lib/catalog.js` 的 `printFile` 一樣：`transient-serenity.jpg`、`boston-public-library.jpg`、`fenway-park.jpg`、`nature-in-city.jpg`。這些檔案不公開，只有 Prodigi 拿得到。網站也會在這裡的 `orders/` 資料夾記錄已送出的訂單，避免重複下單。
 5. **Cloudflare Pages 設定**（專案 → Settings）：
    - Environment variables（全部用加密的 Secret 類型）：
      - `PAYPAL_CLIENT_ID`、`PAYPAL_CLIENT_SECRET` — PayPal App 的 Client ID 和 Secret
