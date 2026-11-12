@@ -30,22 +30,15 @@ export const PRODIGI_SHIPPING_METHOD = "budget";
 const CANVAS_ATTR = { wrap: "ImageWrap" };
 const FRAME_ATTR = { color: "black", mountColor: "snow white" };
 const SIZES = {
-  "12 × 18 in": { canvas: 8000,  framed: 6500,  canvasSku: "CAN-19MM-SC-12X18",    frameSku: "FRA-CLA-EMA-MOUNT1-ACRY-30X45" },
-  "16 × 24 in": { canvas: 10000, framed: 8000,  canvasSku: "GLOBAL-SLIMCAN-16X24", frameSku: "FRA-CLA-EMA-MOUNT1-ACRY-40X60" },
-  // framed 24 × 36: not set up in Prodigi yet (60×90 cm is a guess) — check before selling it
-  "24 × 36 in": { canvas: 16000, framed: 14000, canvasSku: "GLOBAL-SLIMCAN-24X36", frameSku: "FRA-CLA-EMA-MOUNT1-ACRY-60X90" },
+  "12 × 18 in": { canvas: 8000,  framed: 25000, canvasSku: "CAN-19MM-SC-12X18",    frameSku: "FRA-CLA-EMA-MOUNT1-ACRY-30X45" },
+  "16 × 24 in": { canvas: 10000, framed: 30000, canvasSku: "GLOBAL-SLIMCAN-16X24", frameSku: "FRA-CLA-EMA-MOUNT1-ACRY-40X60" },
+  "24 × 36 in": { canvas: 16000, framed: null,  canvasSku: "GLOBAL-SLIMCAN-24X36" },  // no framed 24 × 36 (owner's choice)
 };
 const PRINT = {};
 for (const [size, s] of Object.entries(SIZES)) {
   PRINT[`Canvas / ${size}`] = { price: s.canvas, sku: s.canvasSku, attributes: CANVAS_ATTR, sizing: "fillPrintArea" };
-  PRINT[`Framed Print / ${size}`] = { price: s.framed, sku: s.frameSku, attributes: FRAME_ATTR, sizing: "fitPrintArea" };
+  if (s.framed) PRINT[`Framed Print / ${size}`] = { price: s.framed, sku: s.frameSku, attributes: FRAME_ATTR, sizing: "fitPrintArea" };
 }
-// Boston Public Library: framed 12 × 18 $250 and 16 × 24 $300; no framed 24 × 36 (owner's choice).
-const BPL_PRINT = { ...PRINT };
-BPL_PRINT["Framed Print / 12 × 18 in"] = { ...PRINT["Framed Print / 12 × 18 in"], price: 25000 };
-BPL_PRINT["Framed Print / 16 × 24 in"] = { ...PRINT["Framed Print / 16 × 24 in"], price: 30000 };
-delete BPL_PRINT["Framed Print / 24 × 36 in"];
-
 // Fine art postcard, 6×4" Mohawk 324gsm matte, single, blank back (Prodigi catalogue, cost $0.88 before shipping).
 const POSTCARD = {
   "4 × 6 in": { price: 500, sku: "GLOBAL-POST-MOH-6X4-BLA", sizing: "fillPrintArea" },
@@ -53,7 +46,7 @@ const POSTCARD = {
 
 export const PRODUCTS = {
   "transient-serenity":    { title: "“Transient Serenity”",    printFile: "r2:transient-serenity.jpg",    variants: PRINT },
-  "boston-public-library": { title: "“Boston Public Library”", printFile: "r2:boston-public-library.jpg", variants: BPL_PRINT },
+  "boston-public-library": { title: "“Boston Public Library”", printFile: "r2:boston-public-library.jpg", variants: PRINT },
   "fenway-park":           { title: "“Fenway Park”",           printFile: "r2:fenway-park.jpg",           variants: PRINT },
   "tow-zone":              { title: "“Tow Zone”",              printFile: "r2:tow-zone.jpg",              variants: PRINT },
   "boston-public-library-postcard": { title: "“Boston Public Library” Postcard", printFile: "r2:boston-public-library.jpg", variants: POSTCARD },
