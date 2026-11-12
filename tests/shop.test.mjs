@@ -207,4 +207,11 @@ if (ROOT) {
   console.log("✓ every product page's options and prices match the server catalog");
 }
 
+// ---- Prodigi key prefix ----
+import { prodigiKey } from "./functions/_lib/prodigi.js";
+assert.equal(prodigiKey({ PRODIGI_API_KEY: " abc-123 " }), "sandbox_abc-123");
+assert.equal(prodigiKey({ PRODIGI_API_KEY: "abc", PRODIGI_ENV: "live" }), "live_abc");
+assert.equal(prodigiKey({ PRODIGI_API_KEY: "sandbox_abc", PRODIGI_ENV: "live" }), "sandbox_abc");
+console.log("✓ the Prodigi key gets its sandbox_/live_ prefix");
+
 console.log("\nAll tests passed.");
