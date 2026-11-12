@@ -23,15 +23,17 @@ export const PRODIGI_SHIPPING_METHOD = "standard"; // tracked (owner's choice); 
 // Prints: one variant per Material × Size, keyed "Material / Size" (the product page joins the chosen buttons with " / ").
 // SKUs are the ones the owner set up in the Prodigi dashboard ("Your products" → BPL in Early Morning Canvas / Framed):
 //   Canvas  = Slim canvas, 19 mm bar, standard 400gsm canvas, image wrap
-//   Framed  = Classic frame, black, EMA paper, Snow white 1.4 mm mount, acrylic glaze (Prodigi sizes are metric: 30×45, 40×60 cm)
-// Costs in Prodigi (before shipping): canvas $29.28 / $30.00 / $52.00, framed $101.70 / $119.10.
+//   Framed  = GLOBAL-CFPM: Classic frame, black, EMA 200gsm paper, Snow white 2.4 mm mount, acrylic glaze.
+//             GLOBAL SKUs are made in the lab nearest the buyer (US, NL, UK, AU); the old FRA-CLA-… SKUs were UK-only
+//             and cost about twice as much to the US (checked with Prodigi sandbox quotes on 2026-11-12).
+// Costs to the US (Standard, item + shipping): canvas 16×24 $58, 24×36 $89; framed 12×18 $78, 16×24 $88.
 //   attributes  sent to Prodigi with the item (exact names/values to confirm with the first sandbox order)
 //   sizing      "fillPrintArea" fills the print area (canvas); "fitPrintArea" never crops the photo (framed, inside the mount)
 const CANVAS_ATTR = { wrap: "ImageWrap" };
 const FRAME_ATTR = { color: "black", mountColor: "snow white" };
 const SIZES = {
-  "12 × 18 in": { canvas: 8000,  framed: 25000, canvasSku: "CAN-19MM-SC-12X18",    frameSku: "FRA-CLA-EMA-MOUNT1-ACRY-30X45" },
-  "16 × 24 in": { canvas: 10000, framed: 30000, canvasSku: "GLOBAL-SLIMCAN-16X24", frameSku: "FRA-CLA-EMA-MOUNT1-ACRY-40X60" },
+  "12 × 18 in": { canvas: 8000,  framed: 25000, canvasSku: "CAN-19MM-SC-12X18",    frameSku: "GLOBAL-CFPM-12X18" },
+  "16 × 24 in": { canvas: 10000, framed: 30000, canvasSku: "GLOBAL-SLIMCAN-16X24", frameSku: "GLOBAL-CFPM-16X24" },
   "24 × 36 in": { canvas: 16000, framed: null,  canvasSku: "GLOBAL-SLIMCAN-24X36" },  // no framed 24 × 36 (owner's choice)
 };
 const PRINT = {};

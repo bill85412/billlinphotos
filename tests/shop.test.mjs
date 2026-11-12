@@ -126,7 +126,7 @@ const order = JSON.parse(prodigiCall.body);
 assert.equal(order.submit, true);
 assert.equal(order.merchantReference, "ORD1");
 assert.equal(order.items.length, 2);
-assert.equal(order.items[0].sku, "FRA-CLA-EMA-MOUNT1-ACRY-40X60");
+assert.equal(order.items[0].sku, "GLOBAL-CFPM-16X24");
 assert.equal(order.items[0].sizing, "fitPrintArea");
 assert.deepEqual(order.items[0].attributes, { color: "black", mountColor: "snow white" });
 assert.equal(order.items[0].quantity, 1);
