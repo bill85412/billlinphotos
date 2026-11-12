@@ -36,7 +36,7 @@ function layout(site, title, bodyHtml) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;padding:36px 32px">
 <tr><td style="font-size:26px;letter-spacing:.04em;padding-bottom:6px">Bill Lin</td></tr>
 <tr><td style="font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#888;padding-bottom:26px">Photography</td></tr>
-<tr><td style="font-size:22px;padding-bottom:16px">${esc(title)}</td></tr>
+${title ? `<tr><td style="font-size:22px;padding-bottom:16px">${esc(title)}</td></tr>` : ""}
 <tr><td style="font-size:16px;line-height:1.6">${bodyHtml}</td></tr>
 <tr><td style="font-size:13px;color:#888;padding-top:30px;border-top:1px solid #eee;margin-top:24px">
 <a href="${esc(site)}" style="color:#888">billlinphotos.com</a></td></tr>
@@ -56,7 +56,7 @@ const btn = (href, label) => `<p style="margin:26px 0"><a href="${esc(href)}" st
 export function confirmationEmail(site, rec) {
   const track = `${site}/track.html?order=${encodeURIComponent(rec.paypalOrder)}`;
   const first = (rec.name || "").split(" ")[0];
-  const html = layout(site, "Thank you for your order", `
+  const html = layout(site, "", `
 <p>${first ? `Hi ${esc(first)},` : "Hi,"}</p>
 <p>Thank you for your order!</p>
 <p style="margin:0"><strong>Order number:</strong> ${esc(rec.paypalOrder)}</p>
