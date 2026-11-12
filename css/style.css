@@ -354,6 +354,35 @@ html.no-scroll { overflow: hidden; }
 .order-done h1 { font-size: 34px; margin-bottom: 22px; }
 .order-done p { font-size: 19px; line-height: 1.7; max-width: 620px; margin: 0 auto 14px; }
 .order-done .btn { margin-top: 22px; }
+.order-done-actions { display: flex; gap: 14px; justify-content: center; align-items: center; flex-wrap: wrap; margin-top: 22px; }
+.order-done-actions .btn { margin-top: 0; }
+.btn.btn-ghost { background: transparent; border: 1px solid currentColor; }
+/* Track Your Order */
+.track-page { padding: 150px var(--gutter) 130px; min-height: 70vh; }
+.track-page h1 { font-size: 34px; text-align: center; margin-bottom: 12px; }
+.track-intro { text-align: center; font-size: 19px; color: rgba(0,0,0,.7); margin: 0 auto 28px; max-width: 560px; line-height: 1.6; }
+.track-form { max-width: 420px; margin: 0 auto; display: grid; gap: 16px; }
+.track-form label { display: grid; gap: 6px; font-size: 17px; }
+.track-form input { font: inherit; font-size: 18px; padding: 11px 14px; border: 1px solid rgba(0,0,0,.25); border-radius: 8px; background: #fff; }
+.track-form .btn { justify-self: center; margin-top: 6px; cursor: pointer; border: 0; }
+.track-error { text-align: center; color: #9b2c2c; min-height: 1.4em; font-size: 17px; }
+.track-result { max-width: 560px; margin: 26px auto 0; background: #fff; border-radius: 12px; padding: 26px 26px 18px; box-shadow: 0 6px 24px rgba(0,0,0,.06); }
+.track-head { font-size: 18px; margin-bottom: 20px; text-align: center; }
+.track-steps { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); margin: 0 0 22px; padding: 0; position: relative; }
+.track-steps li { text-align: center; font-size: 15px; color: rgba(0,0,0,.45); position: relative; padding-top: 26px; }
+.track-steps li span { position: absolute; top: 0; left: 50%; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: #ddd; z-index: 1; }
+.track-steps li::before { content: ""; position: absolute; top: 7px; left: -50%; width: 100%; height: 2px; background: #ddd; }
+.track-steps li:first-child::before { display: none; }
+.track-steps li.done { color: #111; }
+.track-steps li.done span, .track-steps li.done::before { background: var(--sage); }
+.track-steps li.current { font-weight: 500; }
+.track-cancelled { text-align: center; color: #9b2c2c; margin-bottom: 18px; }
+.track-ship { border-top: 1px solid #eee; padding: 14px 0; font-size: 17px; line-height: 1.6; }
+.track-ship .btn { margin-top: 8px; }
+.track-items { list-style: none; padding: 0; margin: 0; border-top: 1px solid #eee; }
+.track-items li { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid #eee; font-size: 17px; }
+.track-items small { display: block; color: rgba(0,0,0,.55); font-size: 15px; }
+@media (max-width: 560px) { .track-steps li { font-size: 13px; } }
 .cart-page h1 { font-size: 30px; margin-bottom: 26px; text-align: center; }
 .cart-view { max-width: 620px; margin: 0 auto; }
 .cart-view-body ul { list-style: none; display: grid; gap: 12px; }
@@ -437,3 +466,4 @@ main > .has-footer { flex: 1 0 auto; }
   .city-list span { background: #111; color: #d8d8d2; }
   .city-list small { font-family: var(--serif); font-size: 13px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: #9a9b94; }
 }
+.site-footer a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }

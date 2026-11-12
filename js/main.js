@@ -78,7 +78,7 @@
 
   const footer = document.createElement("footer");
   footer.className = "site-footer";
-  footer.innerHTML = `<p>Copyright © ${new Date().getFullYear()} by Bill Lin</p>`;
+  footer.innerHTML = `<p>Copyright © ${new Date().getFullYear()} by Bill Lin${page === "shop" ? ` · <a href="track.html">Track Your Order</a>` : ""}</p>`;
   // The copyright sits at the bottom of the page's last section (over its photo or colour), not in a band of its own.
   const lastSection = document.querySelector("main") && document.querySelector("main").lastElementChild;
   if (lastSection) {
@@ -610,7 +610,56 @@
     render();
   }
 
-  /* ---------- Order confirmed: the payment went through, so empty the cart ---------- */
-  if (document.querySelector(".order-done")) Cart.clear();
+  /* ---------- Order confirmed: the payment went through, so empty the cart and show the order number ---------- */
+  const done = document.querySelector(".order-done");
+  if (done) {
+    Cart.clear();
+    const no = new URLSearchParams(location.search).get("order");
+    if (no && /^[A-Za-z0-9-]{3,64}$/.test(no)) {
+      const p = done.querySelector(".order-no"); p.querySelector("strong").textContent = no; p.hidden = false;
+      done.querySelector(".track-link").href = `track.html?order=${encodeURIComponent(no)}`;
+    }
+  }
+
+  /* ---------- Track Your Order: order number + email → /api/order-status ---------- */
+  const trackForm = document.querySelector(".track-form");
+  if (trackForm) {
+    const out = document.querySelector(".track-result");
+    const err = trackForm.querySelector(".track-error");
+    const btnEl = trackForm.querySelector("button");
+    const q = new URLSearchParams(location.search).get("order");
+    if (q) trackForm.order.value = q;
+    const fmtDate = (d) => { try { return new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }); } catch (e) { return ""; } };
+    const STEPS = ["Order received", "In production", "Shipped", "Delivered"];
+    trackForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      err.textContent = ""; out.hidden = true;
+      const order = trackForm.order.value.trim(), email = trackForm.email.value.trim();
+      if (!order || !email) { err.textContent = "Please enter your order number and email."; return; }
+      btnEl.disabled = true; btnEl.textContent = "Checking…";
+      try {
+        const r = await fetch(`/api/order-status?order=${encodeURIComponent(order)}&email=${encodeURIComponent(email)}`);
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) { err.textContent = j.error || "Something went wrong. Please try again."; return; }
+        const steps = j.step === 0
+          ? `<p class="track-cancelled">This order was cancelled.</p>`
+          : `<ol class="track-steps">${STEPS.map((s, i) => `<li class="${i + 1 <= j.step ? "done" : ""}${i + 1 === j.step ? " current" : ""}"><span></span>${s}</li>`).join("")}</ol>`;
+        out.innerHTML = `
+          <p class="track-head">Order <strong>${esc(j.order)}</strong>${j.placedAt ? ` · placed ${esc(fmtDate(j.placedAt))}` : ""}</p>
+          ${steps}
+          ${(j.shipments || []).map((s) => `<div class="track-ship">
+              <p>${esc([s.carrier, s.service].filter(Boolean).join(" · ") || "Shipped")}${s.dispatchedAt ? ` · shipped ${esc(fmtDate(s.dispatchedAt))}` : ""}</p>
+              ${s.trackingNumber ? `<p>Tracking number: ${esc(s.trackingNumber)}</p>` : ""}
+              ${s.trackingUrl ? `<a class="btn" href="${esc(s.trackingUrl)}" target="_blank" rel="noopener">Track Parcel</a>` : ""}
+            </div>`).join("")}
+          <ul class="track-items">${(j.items || []).map((i) => `<li><span>${esc(i.title)}<small>${esc(i.option)} · Qty ${i.quantity}</small></span><span>${usd(i.price * i.quantity)}</span></li>`).join("")}</ul>`;
+        out.hidden = false;
+      } catch (e2) {
+        err.textContent = "Something went wrong. Please try again.";
+      } finally {
+        btnEl.disabled = false; btnEl.textContent = "Check Status";
+      }
+    });
+  }
   updateCartBadge();
 })();

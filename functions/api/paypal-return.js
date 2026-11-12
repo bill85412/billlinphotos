@@ -12,7 +12,7 @@ export async function onRequestGet({ request, env }) {
   const r = await paypal(env, "POST", `/v2/checkout/orders/${encodeURIComponent(orderId)}/capture`, {}, { "PayPal-Request-Id": `capture-${orderId}` });
   const issue = r.data?.details?.[0]?.issue;
   const captured = (r.ok && r.data.status === "COMPLETED") || issue === "ORDER_ALREADY_CAPTURED";
-  if (captured) return Response.redirect(`${site}/order-success.html`, 302);
+  if (captured) return Response.redirect(`${site}/order-success.html?order=${encodeURIComponent(orderId)}`, 302);
 
   // Card declined or payment not approved: back to the cart, which is still there, with a message.
   console.error("PayPal capture failed", r.status, JSON.stringify(r.data).slice(0, 500));

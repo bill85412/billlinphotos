@@ -25,3 +25,29 @@ export async function createProdigiOrder(env, order) {
   const id = data?.data?.id || data?.order?.id || data?.id || "unknown";
   return { id, data };
 }
+
+async function prodigiGet(env, path) {
+  const base = env.PRODIGI_API_BASE || DEFAULT_BASE;
+  const res = await fetch(`${base}${path}`, { headers: { "X-API-Key": prodigiKey(env) } });
+  const text = await res.text();
+  let data = {};
+  try { data = JSON.parse(text); } catch { data = { raw: text }; }
+  if (!res.ok) throw new Error(`Prodigi ${path} failed (${res.status}): ${text.slice(0, 300)}`);
+  return data;
+}
+
+// Order (v5: { data: Order }) — status is draft / pending_submission / submitted / in_production /
+// partially_shipped / shipped / completed / cancelled / failed / on_hold / paused.
+export async function getProdigiOrder(env, id) {
+  const d = await prodigiGet(env, `/orders/${encodeURIComponent(id)}`);
+  return d.data || d.order || d;
+}
+
+// Shipments (v5: { data: [Shipment] }) — carrier, service, trackingNumber, trackingUrl, status, dispatchedAt, deliveredAt.
+export async function getProdigiShipments(env, id) {
+  const d = await prodigiGet(env, `/orders/${encodeURIComponent(id)}/shipments`);
+  return Array.isArray(d.data) ? d.data : Array.isArray(d.shipments) ? d.shipments : [];
+}
+
+// A shipment counts as shipped once it has left the lab or has tracking.
+export const isShipped = (s) => ["dispatched", "in_transit", "shipped", "delivered"].includes(String(s.status || "").toLowerCase()) || !!(s.trackingNumber || s.trackingUrl);

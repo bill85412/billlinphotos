@@ -3,7 +3,9 @@
 // sends it to Prodigi, and leaves a marker in R2 so the same payment is never printed twice.
 import { paypal, verifyWebhook } from "../_lib/paypal.js";
 import { createProdigiOrder } from "../_lib/prodigi.js";
-import { findVariant, PRODIGI_SHIPPING_METHOD } from "../_lib/catalog.js";
+import { findVariant, PRODIGI_SHIPPING_METHOD, SHIPPING } from "../_lib/catalog.js";
+import { sendEmail, confirmationEmail } from "../_lib/email.js";
+import { sign } from "../_lib/sign.js";
 
 const ok = (msg) => new Response(msg, { status: 200 });
 
@@ -53,9 +55,12 @@ export async function fulfil(env, orderId, origin) {
   if (!a?.address_line_1) throw new Error(`No shipping address on paid PayPal order ${orderId}`);
   const payer = order.payer || {};
 
+  const site = (env.SITE_URL || origin).replace(/\/$/, "");
   const prodigiOrder = {
     submit: true,
     merchantReference: orderId,
+    // Prodigi calls this when the order moves on (e.g. ships); it then emails the tracking link.
+    callbackUrl: `${site}/api/prodigi-callback?order=${encodeURIComponent(orderId)}&sig=${await sign(env, orderId)}`,
     shippingMethod: PRODIGI_SHIPPING_METHOD,
     recipient: {
       name: ship.name?.full_name || [payer.name?.given_name, payer.name?.surname].filter(Boolean).join(" "),
@@ -82,10 +87,25 @@ export async function fulfil(env, orderId, origin) {
   };
 
   const { id } = await createProdigiOrder(env, prodigiOrder);
-  if (env.PRINT_FILES) {
-    await env.PRINT_FILES.put(markerKey, JSON.stringify({ paypalOrder: orderId, prodigiOrder: id, at: new Date().toISOString() }),
-      { httpMetadata: { contentType: "application/json" } });
-  }
+
+  // The order record: lets the customer look the order up (/api/order-status) and drives the emails.
+  const r2 = prodigiOrder.recipient;
+  const record = {
+    paypalOrder: orderId, prodigiOrder: id, at: new Date().toISOString(),
+    email: r2.email || "", name: r2.name || "",
+    address: [r2.name, a.address_line_1, a.address_line_2, [a.admin_area_2, a.admin_area_1, a.postal_code].filter(Boolean).join(" "), a.country_code].filter(Boolean),
+    items: lines.map((l) => ({ title: l.found.product.title, option: l.variant, quantity: l.quantity, price: l.found.variant.price })),
+    shipping: SHIPPING.amount,
+    total: Math.round(Number(unit.amount?.value || 0) * 100),
+    emails: { confirmation: false, shipped: [] },
+  };
+  try {
+    if (record.email) {
+      const m = await sendEmail(env, { to: record.email, ...confirmationEmail(site, record) });
+      record.emails.confirmation = !!m.sent;
+    }
+  } catch (err) { console.error(err); } // an email problem must never stop the print order
+  if (env.PRINT_FILES) await saveRecord(env, record);
   return `Sent to Prodigi as ${id}`;
 }
 
@@ -101,4 +121,14 @@ function printFileUrl(env, printFile, origin) {
 function phoneOf(p) {
   if (!p?.national_number) return "";
   return (p.country_code ? `+${p.country_code} ` : "") + p.national_number;
+}
+
+export async function saveRecord(env, record) {
+  await env.PRINT_FILES.put(`orders/${record.paypalOrder}.json`, JSON.stringify(record), { httpMetadata: { contentType: "application/json" } });
+}
+export async function loadRecord(env, paypalOrder) {
+  if (!env.PRINT_FILES || !/^[A-Za-z0-9-]{3,64}$/.test(paypalOrder || "")) return null;
+  const obj = await env.PRINT_FILES.get(`orders/${paypalOrder}.json`);
+  if (!obj) return null;
+  try { return JSON.parse(typeof obj.text === "function" ? await obj.text() : obj.body); } catch { return null; }
 }

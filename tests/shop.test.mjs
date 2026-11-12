@@ -20,6 +20,7 @@ const bucket = makeBucket();
 const env = {
   PAYPAL_CLIENT_ID: "cid", PAYPAL_CLIENT_SECRET: "sec", PAYPAL_WEBHOOK_ID: "WH-1",
   PRODIGI_API_KEY: "sandbox_abc", PRINT_FILE_TOKEN: "tok123", SITE_URL: "https://billlinphotos.com", PRINT_FILES: bucket,
+  RESEND_API_KEY: "re_test", EMAIL_REPLY_TO: "owner@example.com",
 };
 
 let calls = [];
@@ -27,6 +28,9 @@ let paypalOrder;           // what GET /v2/checkout/orders/:id returns
 let captureReply;          // what the capture call returns
 let verifyStatus = "SUCCESS";
 let prodigiStatus = 202;
+let emails = [];
+let prodigiOrderStatus = "in_production";
+let prodigiShipments = [];
 const reply = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 globalThis.fetch = async (url, init = {}) => {
   calls.push({ url, method: init.method, body: init.body, headers: init.headers });
@@ -35,6 +39,9 @@ globalThis.fetch = async (url, init = {}) => {
   if (url.endsWith("/capture")) return reply(...captureReply);
   if (url.startsWith(`${SB}/v2/checkout/orders/`) && init.method === "GET") return reply(paypalOrder);
   if (url === `${SB}/v1/notifications/verify-webhook-signature`) return reply({ verification_status: verifyStatus });
+  if (url === "https://api.resend.com/emails") { emails.push(JSON.parse(init.body)); return reply({ id: "em_1" }); }
+  if (url === "https://api.prodigi.com/v5/orders/ord_777") return reply({ data: { id: "ord_777", status: prodigiOrderStatus, merchantReference: "ORD1" } });
+  if (url === "https://api.prodigi.com/v5/orders/ord_777/shipments") return reply({ data: prodigiShipments });
   if (url === "https://api.prodigi.com/v5/orders") {
     return prodigiStatus === 202 ? reply({ data: { id: "ord_777", status: "pending_submission" } }, 202) : reply({ error: "bad sku" }, prodigiStatus);
   }
@@ -81,10 +88,10 @@ console.log("✓ checkout rejects unknown options, silly quantities, empty carts
 captureReply = [{ id: "ORD1", status: "COMPLETED" }, 201];
 r = await paypalReturn({ request: new Request("https://billlinphotos.com/api/paypal-return?token=ORD1&PayerID=P1"), env });
 assert.equal(r.status, 302);
-assert.equal(r.headers.get("Location"), "https://billlinphotos.com/order-success.html");
+assert.equal(r.headers.get("Location"), "https://billlinphotos.com/order-success.html?order=ORD1");
 captureReply = [{ name: "UNPROCESSABLE_ENTITY", details: [{ issue: "ORDER_ALREADY_CAPTURED" }] }, 422];
 r = await paypalReturn({ request: new Request("https://billlinphotos.com/api/paypal-return?token=ORD1"), env });
-assert.equal(r.headers.get("Location"), "https://billlinphotos.com/order-success.html");
+assert.equal(r.headers.get("Location"), "https://billlinphotos.com/order-success.html?order=ORD1");
 captureReply = [{ name: "UNPROCESSABLE_ENTITY", details: [{ issue: "INSTRUMENT_DECLINED" }] }, 422];
 r = await paypalReturn({ request: new Request("https://billlinphotos.com/api/paypal-return?token=ORD1"), env });
 assert.equal(r.headers.get("Location"), "https://billlinphotos.com/cart.html?payment=failed");
@@ -100,6 +107,7 @@ paypalOrder = {
       { name: "Transient Serenity — Framed Print", sku: "transient-serenity|Framed Print / 16 × 24 in", quantity: "1" },
       { name: "Transient Serenity — Canvas", sku: "transient-serenity|Canvas / 16 × 24 in", quantity: "2" },
     ],
+    amount: { currency_code: "USD", value: "500.00" },
     shipping: { name: { full_name: "Ann Buyer" }, address: { address_line_1: "1 Main St", admin_area_2: "Boston", admin_area_1: "MA", postal_code: "02116", country_code: "US" } },
   }],
 };
@@ -132,7 +140,18 @@ assert.equal(order.recipient.address.countryCode, "US");
 assert.equal(order.recipient.email, "buyer@example.com");
 assert.equal(order.recipient.phoneNumber, "6175550100");
 assert.ok(bucket.store.has("orders/ORD1.json"));
+assert.match(order.callbackUrl, /^https:\/\/billlinphotos\.com\/api\/prodigi-callback\?order=ORD1&sig=[0-9a-f]{32}$/);
 console.log("✓ a captured PayPal payment becomes one Prodigi order with every cart item, the address and print files");
+assert.equal(emails.length, 1);
+assert.deepEqual(emails[0].to, ["owner@example.com"], "sandbox: the owner gets the test emails");
+assert.equal(emails[0].reply_to, "owner@example.com");
+assert.match(emails[0].subject, /Your order ORD1/);
+assert.match(emails[0].html, /Transient Serenity/);
+assert.match(emails[0].html, /\$500\.00/);
+assert.match(emails[0].html, /track\.html\?order=ORD1/);
+const rec1 = JSON.parse(bucket.store.get("orders/ORD1.json"));
+assert.equal(rec1.email, "buyer@example.com"); assert.equal(rec1.emails.confirmation, true); assert.equal(rec1.total, 50000);
+console.log("✓ the customer gets an order confirmation email with the order number, items, total and a tracking link");
 
 calls = [];
 r = await webhook({ request: post("https://billlinphotos.com/api/paypal-webhook", event, ppHeaders), env });
@@ -165,6 +184,50 @@ r = await webhook({ request: post("https://billlinphotos.com/api/paypal-webhook"
 assert.equal(r.status, 200);
 assert.ok(!calls.some((c) => c.url.endsWith("/v5/orders")));
 console.log("✓ orders PayPal has not marked as paid are not printed");
+
+// ---- Prodigi callback → shipped email ----
+import { onRequestPost as prodigiCallback } from "./functions/api/prodigi-callback.js";
+import { onRequestGet as orderStatus } from "./functions/api/order-status.js";
+paypalOrder.status = "COMPLETED"; bucket.store.delete("orders/ORD1.json"); emails = [];
+r = await webhook({ request: post("https://billlinphotos.com/api/paypal-webhook", event, ppHeaders), env });
+assert.equal(r.status, 200);
+const cbUrl = JSON.parse(calls.filter((c) => c.url.endsWith("/v5/orders")).pop().body).callbackUrl;
+emails = [];
+r = await prodigiCallback({ request: post(cbUrl.replace(/sig=.*/, "sig=bad"), {}), env });
+assert.equal(r.status, 404);
+r = await prodigiCallback({ request: post(cbUrl, { type: "x" }), env });   // nothing shipped yet
+assert.equal(r.status, 200); assert.equal(emails.length, 0);
+prodigiShipments = [{ id: "shp_1", carrier: "FedEx", service: "Ground", trackingNumber: "TRK123", trackingUrl: "https://track.example/TRK123", status: "dispatched", dispatchedAt: "2026-11-16T10:00:00Z" }];
+r = await prodigiCallback({ request: post(cbUrl, {}), env });
+assert.equal(r.status, 200); assert.equal(emails.length, 1);
+assert.match(emails[0].subject, /shipped/); assert.match(emails[0].html, /TRK123/); assert.match(emails[0].html, /track\.example/);
+r = await prodigiCallback({ request: post(cbUrl, {}), env });       // same shipment again: no second email
+assert.equal(emails.length, 1);
+console.log("✓ when Prodigi ships, the customer gets one email with the carrier and tracking link");
+
+// ---- order status page ----
+r = await orderStatus({ request: new Request("https://x/api/order-status?order=ORD1&email=BUYER@example.com"), env });
+let st = await r.json();
+assert.equal(r.status, 200); assert.equal(st.label, "Shipped"); assert.equal(st.step, 3);
+assert.equal(st.shipments[0].trackingNumber, "TRK123"); assert.equal(st.items.length, 2);
+r = await orderStatus({ request: new Request("https://x/api/order-status?order=ORD1&email=someone@else.com"), env });
+assert.equal(r.status, 404);
+r = await orderStatus({ request: new Request("https://x/api/order-status?order=NOPE1&email=buyer@example.com"), env });
+assert.equal(r.status, 404);
+prodigiShipments = [];
+r = await orderStatus({ request: new Request("https://x/api/order-status?order=ORD1&email=buyer@example.com"), env });
+st = await r.json(); assert.equal(st.label, "In production");
+console.log("✓ customers can look an order up with its number and their email (and nobody else's)");
+
+// ---- sandbox mode sends every email to the owner; live mode to the customer ----
+import { sendEmail } from "./functions/_lib/email.js";
+emails = [];
+await sendEmail(env, { to: "fake@personal.example.com", subject: "Hi", html: "x", text: "x" });
+assert.deepEqual(emails[0].to, ["owner@example.com"]); assert.match(emails[0].subject, /^\[TEST\]/);
+await sendEmail({ ...env, PAYPAL_ENV: "live" }, { to: "buyer@example.com", subject: "Hi", html: "x", text: "x" });
+assert.deepEqual(emails[1].to, ["buyer@example.com"]); assert.equal(emails[1].subject, "Hi");
+assert.deepEqual(await sendEmail({ ...env, RESEND_API_KEY: "" }, { to: "a@b.c", subject: "s", html: "", text: "" }), { skipped: "no RESEND_API_KEY" });
+console.log("✓ in PayPal sandbox mode the emails go to the owner, and without a Resend key nothing is sent");
 
 // ---- print file ----
 r = await printFile({ params: { name: "transient-serenity.jpg" }, request: new Request("https://x/api/print-file/transient-serenity.jpg?token=tok123"), env });

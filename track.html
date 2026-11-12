@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Track Your Order — Bill Lin</title>
+<meta name="description" content="Check the status of your Bill Lin print order and follow its delivery.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="css/style.css?v=4061f338">
+</head>
+<body data-page="shop">
+<main>
+
+<section class="gray track-page">
+  <h1>Track Your Order</h1>
+  <p class="track-intro">Enter the order number from your confirmation email and the email address you paid with.</p>
+  <form class="track-form" novalidate>
+    <label>Order number<input name="order" autocomplete="off" required></label>
+    <label>Email<input name="email" type="email" autocomplete="email" required></label>
+    <button class="btn" type="submit">Check Status</button>
+    <p class="track-error" role="alert"></p>
+  </form>
+  <div class="track-result" hidden></div>
+</section>
+
+</main>
+
+<script src="js/config.js?v=6c0c228e"></script>
+<script src="js/main.js?v=5610f3f8"></script>
+</body>
+</html>
