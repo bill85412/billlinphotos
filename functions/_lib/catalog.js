@@ -49,10 +49,14 @@ export const PRODUCTS = {
   "transient-serenity":    { title: "“Transient Serenity”",    printFile: "r2:transient-serenity.jpg",    variants: PRINT },
   "boston-public-library": { title: "“Boston Public Library”", printFile: "r2:boston-public-library.jpg", variants: PRINT },
   "fenway-park":           { title: "“Fenway Park”",           printFile: "r2:fenway-park.jpg",           variants: PRINT },
-  "tow-zone":              { title: "“Nature in City”",        printFile: "r2:nature-in-city.jpg",        variants: without("Canvas / 24 × 36 in") },  // original is only 2845 × 4267 px: too soft for 24 × 36
+  "nature-in-city":        { title: "“Nature in City”",        printFile: "r2:nature-in-city.jpg",        variants: without("Canvas / 24 × 36 in") },  // original is only 2845 × 4267 px: too soft for 24 × 36
 };
 
+// Old handles still sitting in visitors' carts.
+const RENAMED = { "tow-zone": "nature-in-city" };
+
 export function findVariant(slug, variant) {
+  if (Object.prototype.hasOwnProperty.call(RENAMED, slug)) slug = RENAMED[slug];
   const product = Object.prototype.hasOwnProperty.call(PRODUCTS, slug) ? PRODUCTS[slug] : null;
   if (!product) return null;
   const v = Object.prototype.hasOwnProperty.call(product.variants, variant) ? product.variants[variant] : null;

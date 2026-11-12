@@ -66,7 +66,7 @@ new-york.html            New York 相簿
 blog.html                Blog 列表
 autumn-in-boston.html    文章
 shop.html                商店
-transient-serenity.html  商品頁（另有 boston-public-library、fenway-park、tow-zone）
+transient-serenity.html  商品頁（另有 boston-public-library、fenway-park、nature-in-city）
 cart.html                購物車
 order-success.html       付款完成頁
 404.html                 找不到頁面
