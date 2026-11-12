@@ -41,18 +41,12 @@ for (const [size, s] of Object.entries(SIZES)) {
   if (s.canvas) PRINT[`Canvas / ${size}`] = { price: s.canvas, sku: s.canvasSku, attributes: CANVAS_ATTR, sizing: "fillPrintArea" };
   if (s.framed) PRINT[`Framed Print / ${size}`] = { price: s.framed, sku: s.frameSku, attributes: FRAME_ATTR, sizing: "fitPrintArea" };
 }
-// Fine art postcard, 6×4" Mohawk 324gsm matte, single, blank back (Prodigi catalogue, cost $0.88 before shipping).
-const POSTCARD = {
-  "4 × 6 in": { price: 500, sku: "GLOBAL-POST-MOH-6X4-BLA", sizing: "fillPrintArea" },
-};
 
 export const PRODUCTS = {
   "transient-serenity":    { title: "“Transient Serenity”",    printFile: "r2:transient-serenity.jpg",    variants: PRINT },
   "boston-public-library": { title: "“Boston Public Library”", printFile: "r2:boston-public-library.jpg", variants: PRINT },
   "fenway-park":           { title: "“Fenway Park”",           printFile: "r2:fenway-park.jpg",           variants: PRINT },
   "tow-zone":              { title: "“Tow Zone”",              printFile: "r2:tow-zone.jpg",              variants: PRINT },
-  "boston-public-library-postcard": { title: "“Boston Public Library” Postcard", printFile: "r2:boston-public-library.jpg", variants: POSTCARD },
-  "fenway-park-postcard":           { title: "“Fenway Park” Postcard",           printFile: "r2:fenway-park.jpg",           variants: POSTCARD },
 };
 
 export function findVariant(slug, variant) {
