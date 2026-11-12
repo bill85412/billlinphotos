@@ -46,7 +46,7 @@ export const PRODUCTS = {
   "transient-serenity":    { title: "“Transient Serenity”",    printFile: "r2:transient-serenity.jpg",    variants: PRINT },
   "boston-public-library": { title: "“Boston Public Library”", printFile: "r2:boston-public-library.jpg", variants: PRINT },
   "fenway-park":           { title: "“Fenway Park”",           printFile: "r2:fenway-park.jpg",           variants: PRINT },
-  "tow-zone":              { title: "“Tow Zone”",              printFile: "r2:tow-zone.jpg",              variants: PRINT },
+  "tow-zone":              { title: "“Nature in City”",        printFile: "r2:tow-zone.jpg",              variants: PRINT },
 };
 
 export function findVariant(slug, variant) {
