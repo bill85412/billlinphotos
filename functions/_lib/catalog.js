@@ -18,7 +18,7 @@ export const CURRENCY = "USD";
 export const SHIPPING = { amount: 0, label: "Free shipping" };
 
 // Prodigi delivery speed for every order.
-export const PRODIGI_SHIPPING_METHOD = "budget";
+export const PRODIGI_SHIPPING_METHOD = "standard"; // tracked (owner's choice); "budget" may ship without tracking
 
 // Prints: one variant per Material × Size, keyed "Material / Size" (the product page joins the chosen buttons with " / ").
 // SKUs are the ones the owner set up in the Prodigi dashboard ("Your products" → BPL in Early Morning Canvas / Framed):
