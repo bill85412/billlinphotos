@@ -78,7 +78,7 @@
 
   const footer = document.createElement("footer");
   footer.className = "site-footer";
-  footer.innerHTML = `<p>Copyright © ${new Date().getFullYear()} by Bill Lin${page === "shop" ? ` · <a href="track.html">Track Your Order</a>` : ""}</p>`;
+  footer.innerHTML = `<p>Copyright © ${new Date().getFullYear()} by Bill Lin${page === "shop" ? ` · <a href="track.html">Track Your Order</a> · <a href="returns.html">Returns &amp; Refunds</a>` : ""}</p>`;
   // The copyright sits at the bottom of the page's last section (over its photo or colour), not in a band of its own.
   const lastSection = document.querySelector("main") && document.querySelector("main").lastElementChild;
   if (lastSection) {
@@ -439,7 +439,8 @@
       <p class="drawer-ship">${icons.truck}${esc(SHIPPING_NOTE)}</p>
       <button class="drawer-checkout" type="button">Checkout</button>
       <p class="drawer-note" role="status">${failed ? "Your payment didn't go through. Please try again." : ""}</p>
-      <p class="drawer-secure">${icons.lock}Secure checkout · PayPal and cards accepted</p>`;
+      <p class="drawer-secure">${icons.lock}Secure checkout · PayPal and cards accepted</p>
+      <p class="drawer-policy">Made to order · <a href="returns.html">Returns &amp; refunds</a></p>`;
     return { body, foot };
   }
 
@@ -587,6 +588,11 @@
     const gal = document.querySelector(".product-gallery");
     if (gal && gal._choose && groups.length) gal._choose(choice(), false);
 
+    if (!prod.querySelector(".buy-policy")) {
+      const pn = document.createElement("p"); pn.className = "buy-policy";
+      pn.innerHTML = 'Made to order · <a href="returns.html">Returns &amp; refunds</a>';
+      add.insertAdjacentElement("afterend", pn);
+    }
     add.onclick = () => {
       const price = priceOf(sel);
       if (price == null || !slug) return;

@@ -467,3 +467,18 @@ main > .has-footer { flex: 1 0 auto; }
   .city-list small { font-family: var(--serif); font-size: 13px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: #9a9b94; }
 }
 .site-footer a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Returns & Refunds */
+.policy { padding: 150px var(--gutter) 130px; }
+.policy-inner { max-width: 720px; margin: 0 auto; }
+.policy h1 { font-size: 34px; text-align: center; margin-bottom: 30px; }
+.policy h2 { font-size: 24px; font-weight: 500; margin: 38px 0 10px; }
+.policy p { font-size: 19px; line-height: 1.7; margin-bottom: 14px; }
+.policy a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.policy-lead { font-size: 20px; }
+.policy-small { margin-top: 34px; font-size: 16px !important; color: rgba(0,0,0,.6); }
+.drawer-policy { text-align: center; margin-top: 8px; font-size: 14px; }
+.drawer-policy a { color: rgba(0,0,0,.55); text-decoration: underline; text-underline-offset: 3px; }
+.buy-policy { margin-top: 12px; font-size: 15px; color: rgba(0,0,0,.6); }
+.buy-policy a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.order-done a:not(.btn) { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
