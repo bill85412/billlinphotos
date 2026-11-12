@@ -32,13 +32,13 @@ export const PRODIGI_SHIPPING_METHOD = "standard"; // tracked (owner's choice); 
 const CANVAS_ATTR = { wrap: "ImageWrap" };
 const FRAME_ATTR = { color: "black", mountColor: "snow white" };
 const SIZES = {
-  "12 × 18 in": { canvas: 8000,  framed: 25000, canvasSku: "CAN-19MM-SC-12X18",    frameSku: "GLOBAL-CFPM-12X18" },
+  "12 × 18 in": { canvas: null,  framed: 25000, frameSku: "GLOBAL-CFPM-12X18" },  // no canvas 12 × 18 (Prodigi has no GLOBAL slim canvas in this size; the UK-only one lost money)
   "16 × 24 in": { canvas: 10000, framed: 30000, canvasSku: "GLOBAL-SLIMCAN-16X24", frameSku: "GLOBAL-CFPM-16X24" },
   "24 × 36 in": { canvas: 16000, framed: null,  canvasSku: "GLOBAL-SLIMCAN-24X36" },  // no framed 24 × 36 (owner's choice)
 };
 const PRINT = {};
 for (const [size, s] of Object.entries(SIZES)) {
-  PRINT[`Canvas / ${size}`] = { price: s.canvas, sku: s.canvasSku, attributes: CANVAS_ATTR, sizing: "fillPrintArea" };
+  if (s.canvas) PRINT[`Canvas / ${size}`] = { price: s.canvas, sku: s.canvasSku, attributes: CANVAS_ATTR, sizing: "fillPrintArea" };
   if (s.framed) PRINT[`Framed Print / ${size}`] = { price: s.framed, sku: s.frameSku, attributes: FRAME_ATTR, sizing: "fitPrintArea" };
 }
 // Fine art postcard, 6×4" Mohawk 324gsm matte, single, blank back (Prodigi catalogue, cost $0.88 before shipping).

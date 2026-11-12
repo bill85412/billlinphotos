@@ -554,6 +554,12 @@
       }
       return null;
     };
+    // the first value of each group may not exist with the default material (e.g. no canvas 12 × 18): start on the first size that does
+    groups.forEach((g, gi) => {
+      if (gi === 0 || priceOf(sel) != null) return;
+      const ok = g.values.find((v) => priceOf(sel.map((s, i) => (i === gi ? v : s))) != null);
+      if (ok) sel[gi] = ok;
+    });
     const variant = () => sel.map((v) => v.value).join(" / ");
     const render = () => {
       wrap.innerHTML = groups.map((g, gi) => `<div class="opt-group">
