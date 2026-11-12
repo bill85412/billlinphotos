@@ -468,7 +468,8 @@
         });
         const j = await r.json().catch(() => ({}));
         if (r.ok && j.url) { location.href = j.url; return; }
-        note.textContent = (r.status === 503 || (r.status === 404 && !j.error)) ? COMING_SOON : j.error || "Checkout is unavailable right now. Please try again in a moment.";
+        const notSetUp = (r.status === 503 && (!j.error || /not set up/i.test(j.error))) || (r.status === 404 && !j.error);
+        note.textContent = notSetUp ? COMING_SOON : j.error || "Checkout is unavailable right now. Please try again in a moment.";
       } catch (err) {
         note.textContent = "Checkout is unavailable right now. Please try again in a moment.";
       }

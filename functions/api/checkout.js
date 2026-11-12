@@ -70,14 +70,14 @@ export async function onRequestPost({ request, env }) {
   }); } catch (err) {
     // e.g. wrong PayPal keys: say so in the logs and in a short code the owner can read, never the keys themselves
     console.error(err);
-    return json({ error: "Checkout is unavailable right now. Please try again in a moment.", code: err.code || "paypal_error" }, 502);
+    return json({ error: "Checkout is unavailable right now. Please try again in a moment.", code: err.code || "paypal_error" }, 503); // 503, not 502: the billlinphotos.com zone swaps a 502 for its own HTML error page
   }
 
   if (!r.ok) {
     console.error("PayPal order create failed", r.status, JSON.stringify(r.data).slice(0, 800));
-    return json({ error: "Checkout is unavailable right now. Please try again in a moment.", code: `paypal_${r.status}`, issue: r.data?.details?.[0]?.issue || r.data?.name }, 502);
+    return json({ error: "Checkout is unavailable right now. Please try again in a moment.", code: `paypal_${r.status}`, issue: r.data?.details?.[0]?.issue || r.data?.name }, 503); // 503, not 502: the billlinphotos.com zone swaps a 502 for its own HTML error page
   }
   const link = (r.data.links || []).find((l) => l.rel === "payer-action" || l.rel === "approve");
-  if (!link) return json({ error: "Checkout is unavailable right now. Please try again in a moment." }, 502);
+  if (!link) return json({ error: "Checkout is unavailable right now. Please try again in a moment." }, 503); // 503, not 502: the billlinphotos.com zone swaps a 502 for its own HTML error page
   return json({ url: link.href });
 }
