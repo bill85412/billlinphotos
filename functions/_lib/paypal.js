@@ -2,20 +2,24 @@
 // PAYPAL_ENV = "live" uses real money; anything else uses the PayPal sandbox.
 
 export function paypalBase(env) {
-  return env.PAYPAL_ENV === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+  return String(env.PAYPAL_ENV || "").trim().toLowerCase() === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
 }
 
 async function accessToken(env) {
   const res = await fetch(`${paypalBase(env)}/v1/oauth2/token`, {
     method: "POST",
     headers: {
-      Authorization: "Basic " + btoa(`${env.PAYPAL_CLIENT_ID}:${env.PAYPAL_CLIENT_SECRET}`),
+      // trim: a pasted key often carries a stray space or line break
+      Authorization: "Basic " + btoa(`${String(env.PAYPAL_CLIENT_ID).trim()}:${String(env.PAYPAL_CLIENT_SECRET).trim()}`),
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: "grant_type=client_credentials",
   });
-  const data = await res.json();
-  if (!res.ok || !data.access_token) throw new Error(`PayPal sign-in failed (${res.status})`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.access_token) {
+    const e = new Error(`PayPal sign-in failed (${res.status}${data.error ? `: ${data.error}` : ""})`);
+    e.code = "paypal_sign_in"; throw e;
+  }
   return data.access_token;
 }
 

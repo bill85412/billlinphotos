@@ -40,7 +40,8 @@ export async function onRequestPost({ request, env }) {
   }));
   const itemTotal = [...lines.values()].reduce((n, l) => n + l.variant.price * l.quantity, 0);
 
-  const r = await paypal(env, "POST", "/v2/checkout/orders", {
+  let r;
+  try { r = await paypal(env, "POST", "/v2/checkout/orders", {
     intent: "CAPTURE",
     purchase_units: [{
       reference_id: "cart",
@@ -66,9 +67,16 @@ export async function onRequestPost({ request, env }) {
         },
       },
     },
-  });
+  }); } catch (err) {
+    // e.g. wrong PayPal keys: say so in the logs and in a short code the owner can read, never the keys themselves
+    console.error(err);
+    return json({ error: "Checkout is unavailable right now. Please try again in a moment.", code: err.code || "paypal_error" }, 502);
+  }
 
-  if (!r.ok) return json({ error: "Checkout is unavailable right now. Please try again in a moment." }, 502);
+  if (!r.ok) {
+    console.error("PayPal order create failed", r.status, JSON.stringify(r.data).slice(0, 800));
+    return json({ error: "Checkout is unavailable right now. Please try again in a moment.", code: `paypal_${r.status}`, issue: r.data?.details?.[0]?.issue || r.data?.name }, 502);
+  }
   const link = (r.data.links || []).find((l) => l.rel === "payer-action" || l.rel === "approve");
   if (!link) return json({ error: "Checkout is unavailable right now. Please try again in a moment." }, 502);
   return json({ url: link.href });
