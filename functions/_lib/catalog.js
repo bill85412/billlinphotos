@@ -42,11 +42,14 @@ for (const [size, s] of Object.entries(SIZES)) {
   if (s.framed) PRINT[`Framed Print / ${size}`] = { price: s.framed, sku: s.frameSku, attributes: FRAME_ATTR, sizing: "fitPrintArea" };
 }
 
+// A print sold in fewer sizes: the full set minus the given variant keys.
+const without = (...keys) => Object.fromEntries(Object.entries(PRINT).filter(([k]) => !keys.includes(k)));
+
 export const PRODUCTS = {
   "transient-serenity":    { title: "“Transient Serenity”",    printFile: "r2:transient-serenity.jpg",    variants: PRINT },
   "boston-public-library": { title: "“Boston Public Library”", printFile: "r2:boston-public-library.jpg", variants: PRINT },
   "fenway-park":           { title: "“Fenway Park”",           printFile: "r2:fenway-park.jpg",           variants: PRINT },
-  "tow-zone":              { title: "“Nature in City”",        printFile: "r2:tow-zone.jpg",              variants: PRINT },
+  "tow-zone":              { title: "“Nature in City”",        printFile: "r2:tow-zone.jpg",              variants: without("Canvas / 24 × 36 in") },  // original is only 2845 × 4267 px: too soft for 24 × 36
 };
 
 export function findVariant(slug, variant) {
