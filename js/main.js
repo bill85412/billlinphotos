@@ -78,7 +78,7 @@
 
   const footer = document.createElement("footer");
   footer.className = "site-footer";
-  footer.innerHTML = `<p>Copyright © ${new Date().getFullYear()} by Bill Lin${page === "shop" ? ` · <a href="track.html">Track Your Order</a> · <a href="returns.html">Return Policy</a>` : ""}</p>`;
+  footer.innerHTML = `<p>Copyright © ${new Date().getFullYear()} by Bill Lin${page === "shop" ? ` · <a href="track.html">Track Your Order</a>` : ""}</p>`;
   // The copyright sits at the bottom of the page's last section (over its photo or colour), not in a band of its own.
   const lastSection = document.querySelector("main") && document.querySelector("main").lastElementChild;
   if (lastSection) {
