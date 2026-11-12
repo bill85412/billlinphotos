@@ -58,15 +58,15 @@ export function confirmationEmail(site, rec) {
   const first = (rec.name || "").split(" ")[0];
   const html = layout(site, "Thank you for your order", `
 <p>${first ? `Hi ${esc(first)},` : "Hi,"}</p>
-<p>Thank you for your order. Your print is now being made to order and will ship straight from the print lab. I'll email you again with a tracking link as soon as it ships.</p>
+<p>Thank you for your order!</p>
 <p style="margin:0"><strong>Order number:</strong> ${esc(rec.paypalOrder)}</p>
 ${itemsTable(rec.items)}
 <p style="margin:0">Shipping: ${rec.shipping ? money(rec.shipping) : "Free"}<br><strong>Total: ${money(rec.total)}</strong></p>
 <p style="margin-top:18px;color:#555">Ships to:<br>${rec.address.map(esc).join("<br>")}</p>
 ${btn(track, "Track your order")}
-<p style="color:#555;font-size:14px">Need to cancel or change the address? Reply within 2 hours of ordering. See <a href="${esc(site)}/returns.html" style="color:#555">Return Policy</a>.</p>
+<p style="color:#555;font-size:14px"><a href="${esc(site)}/returns.html" style="color:#555">Return Policy</a></p>
 <p style="color:#555">Thank you for supporting my work.<br>Bill</p>`);
-  const text = `Thank you for your order.\n\nOrder number: ${rec.paypalOrder}\n\n${rec.items.map((i) => `${i.title} — ${i.option} × ${i.quantity}  ${money(i.price * i.quantity)}`).join("\n")}\nTotal: ${money(rec.total)}\n\nShips to:\n${rec.address.join("\n")}\n\nTrack your order: ${track}\nNeed to cancel or change the address? Reply within 2 hours of ordering. Return Policy: ${site}/returns.html\n\nBill Lin Photography`;
+  const text = `Thank you for your order!\n\nOrder number: ${rec.paypalOrder}\n\n${rec.items.map((i) => `${i.title} — ${i.option} × ${i.quantity}  ${money(i.price * i.quantity)}`).join("\n")}\nTotal: ${money(rec.total)}\n\nShips to:\n${rec.address.join("\n")}\n\nTrack your order: ${track}\nReturn Policy: ${site}/returns.html\n\nBill Lin Photography`;
   return { subject: `Your order ${rec.paypalOrder} — Bill Lin Photography`, html, text };
 }
 
